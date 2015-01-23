@@ -66,6 +66,9 @@ int luaK_jump (FuncState *fs) {
 }
 
 
+/*# Encode opcode for "return" (OP_RETURN).
+Note: (first,nret)=(0,0) means return no values.  nret == LUA_MULTRET means return all
+values starting at first (useful for vararg expressions).*/
 void luaK_ret (FuncState *fs, int first, int nret) {
   luaK_codeABC(fs, OP_RETURN, first, nret+1, 0);
 }
@@ -196,6 +199,8 @@ void luaK_concat (FuncState *fs, int *l1, int l2) {
 }
 
 
+/*# Updates function state's maximum needed stack size (maxstacksize) given that
+n additional registers will be needed.  Raises syntax error if above limit (MAXSTACK).*/
 void luaK_checkstack (FuncState *fs, int n) {
   int newstack = fs->freereg + n;
   if (newstack > fs->f->maxstacksize) {
@@ -206,12 +211,16 @@ void luaK_checkstack (FuncState *fs, int n) {
 }
 
 
+/*# Like luaK_checkstack but also reserves those n additional registers.*/
 void luaK_reserveregs (FuncState *fs, int n) {
   luaK_checkstack(fs, n);
   fs->freereg += n;
 }
 
 
+/*# This complements luaK_reserveregs.  It frees the top-most reserved register.
+But it only does this if reg is actually a register (not an index in the constant table)
+and it's not used for storage of a local variable (the lowest nactvar values on the stack).*/
 static void freereg (FuncState *fs, int reg) {
   if (!ISK(reg) && reg >= fs->nactvar) {
     fs->freereg--;
@@ -226,6 +235,13 @@ static void freeexp (FuncState *fs, expdesc *e) {
 }
 
 
+/*# Adds a constant with name `key` and value v to the function state's constant table
+(i.e. array k of size sizek where first nk values are used).
+Duplicates are detected and avoided via the helper table 'h', which maps each existing
+value in the constant table to an integer index in the constant table.  The constant
+table allocated size may need to be grown (and new empty space filled
+with nil's) prior to inserting the constant.  (TODO-comment on luaC_barrier?)
+Returns 0-based index of the new constant in the constant table.*/
 static int addk (FuncState *fs, TValue *k, TValue *v) {
   lua_State *L = fs->L;
   TValue *idx = luaH_set(L, fs->h, k);
@@ -247,6 +263,8 @@ static int addk (FuncState *fs, TValue *k, TValue *v) {
 }
 
 
+/*# Adds a string to the constant table (addk).
+Note: stores in TValue first.*/
 int luaK_stringK (FuncState *fs, TString *s) {
   TValue o;
   setsvalue(fs->L, &o, s);
@@ -254,6 +272,8 @@ int luaK_stringK (FuncState *fs, TString *s) {
 }
 
 
+/*# Adds a number to the constant table (addk).
+(TODO: comment on "numeric problems")*/
 int luaK_numberK (FuncState *fs, lua_Number r) {
   TValue o;
   setnvalue(&o, r);
@@ -261,6 +281,7 @@ int luaK_numberK (FuncState *fs, lua_Number r) {
 }
 
 
+/*# Adds a boolean (0 or 1) to the constant table (addk).*/
 static int boolK (FuncState *fs, int b) {
   TValue o;
   setbvalue(&o, b);
@@ -268,6 +289,14 @@ static int boolK (FuncState *fs, int b) {
 }
 
 
+/*# Adds a nil to the constant table (addk).
+Note: the helper table 'h' (see addk) normally maps constant values to indicies in the
+constant table, but the constant value is nil here, which Lua tables don't allow.
+So, following a design pattern in <http://lua-users.org/wiki/StoringNilsInTables>,
+we use another unique value instead as its placeholder, which here is
+convenient to use the h table itself, which is never used outside of the compiler
+internal and therefore has no chance of misinterpretation.
+h is a Table, which we wrap in a TValue before doing addk.*/
 static int nilK (FuncState *fs) {
   TValue k, v;
   setnilvalue(&v);
@@ -624,6 +653,14 @@ void luaK_indexed (FuncState *fs, expdesc *t, expdesc *k) {
 }
 
 
+/*# Attempts to constant fold (i.e. evaluate at compile time as an optimization) the given
+operation on the two expressions.
+Folding is attempted only on operations on numbers that are known constants
+(e.g. `local x = 1+1` -> `local x = 2`).  Moreover, constant folding is skipped on
+division (or modulo) by zero (resulting in not-a-number, NaN), which Lua 5.1 folded
+but it caused problems so this folding was eliminated in Lua 5.2.
+Returns 1 (not 0) if folding was possible.
+--see <http://lua-users.org/lists/lua-l/2007-02/msg00207.html>.*/
 static int constfolding (OpCode op, expdesc *e1, expdesc *e2) {
   lua_Number v1, v2, r;
   if (!isnumeral(e1) || !isnumeral(e2)) return 0;
@@ -828,4 +865,5 @@ void luaK_setlist (FuncState *fs, int base, int nelems, int tostore) {
   }
   fs->freereg = base + 1;  /* free registers with list values */
 }
+
 

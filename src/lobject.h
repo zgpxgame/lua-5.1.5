@@ -1,3 +1,5 @@
+/*# This files provides the types an operations on for handling
+values (TValue objects) in Lua.*/
 /*
 ** $Id: lobject.h,v 2.20.1.2 2008/08/06 13:29:48 roberto Exp $
 ** Type definitions for Lua objects
@@ -76,7 +78,9 @@ typedef struct lua_TValue {
 
 
 /* Macros to test type */
+/*# Checks whether TValue o is nil.*/
 #define ttisnil(o)	(ttype(o) == LUA_TNIL)
+/*# Checks whether TValue o is of type number.*/
 #define ttisnumber(o)	(ttype(o) == LUA_TNUMBER)
 #define ttisstring(o)	(ttype(o) == LUA_TSTRING)
 #define ttistable(o)	(ttype(o) == LUA_TTABLE)
@@ -89,17 +93,27 @@ typedef struct lua_TValue {
 /* Macros to access values */
 #define ttype(o)	((o)->tt)
 #define gcvalue(o)	check_exp(iscollectable(o), (o)->value.gc)
+/*# Gets void pointer in TValue o.*/
 #define pvalue(o)	check_exp(ttislightuserdata(o), (o)->value.p)
+/*# Gets number (lua_Number) in TValue o (or asserts if not number).*/
 #define nvalue(o)	check_exp(ttisnumber(o), (o)->value.n)
+/*# Gets string (TString) in TValue o.*/
 #define rawtsvalue(o)	check_exp(ttisstring(o), &(o)->value.gc->ts)
+/*# Gets string header (TString.tsv) in TValue o.*/
 #define tsvalue(o)	(&rawtsvalue(o)->tsv)
 #define rawuvalue(o)	check_exp(ttisuserdata(o), &(o)->value.gc->u)
+/*# Gets userdata header (Udata.uv) in TValue o.*/
 #define uvalue(o)	(&rawuvalue(o)->uv)
+/*# Gets closure (Closure - GCObject.cl) in TValue o.*/
 #define clvalue(o)	check_exp(ttisfunction(o), &(o)->value.gc->cl)
+/*# Gets table (Table - GCobject.h) in TValue o.*/
 #define hvalue(o)	check_exp(ttistable(o), &(o)->value.gc->h)
+/*# Gets boolean (int) value in TValue o.*/
 #define bvalue(o)	check_exp(ttisboolean(o), (o)->value.b)
+/*# Gets thread lua_State (GCObject.th) value in Tvalue o.*/
 #define thvalue(o)	check_exp(ttisthread(o), &(o)->value.gc->th)
 
+/*# Gets whether TValue o evaluates to false (i.e. is nil or false).*/
 #define l_isfalse(o)	(ttisnil(o) || (ttisboolean(o) && bvalue(o) == 0))
 
 /*
@@ -116,12 +130,14 @@ typedef struct lua_TValue {
 /* Macros to set values */
 #define setnilvalue(obj) ((obj)->tt=LUA_TNIL)
 
+/*# Sets value of TValue obj to number (lua_Number) x.*/
 #define setnvalue(obj,x) \
   { TValue *i_o=(obj); i_o->value.n=(x); i_o->tt=LUA_TNUMBER; }
 
 #define setpvalue(obj,x) \
   { TValue *i_o=(obj); i_o->value.p=(x); i_o->tt=LUA_TLIGHTUSERDATA; }
 
+/*# Sets value of TValue obj to boolean (int 0..1) x.*/
 #define setbvalue(obj,x) \
   { TValue *i_o=(obj); i_o->value.b=(x); i_o->tt=LUA_TBOOLEAN; }
 
@@ -208,10 +224,16 @@ typedef union TString {
 
 
 #define getstr(ts)	cast(const char *, (ts) + 1)
+/*# Note: TValue o -> const char *.*/
 #define svalue(o)       getstr(rawtsvalue(o))
 
 
 
+/*# Note: each (heavyweight) userdata can be associated with a metatable
+and a user value (previously called a "userdata environment table") set
+via lua_setuservalue.
+A userdata is garbage collectable CommonHeader) and is allocated
+as a series of `len` bytes in Lua's own memory.*/
 typedef union Udata {
   L_Umaxalign dummy;  /* ensures maximum alignment for `local' udata */
   struct {
@@ -228,6 +250,23 @@ typedef union Udata {
 /*
 ** Function Prototypes
 */
+/*# Every definition of a Lua function (or C function exposed as a Lua function)
+is represented with a function prototype object.
+This contains things like a list of bytecode instructions (code),
+links to other constant data used by the functions
+(constants, nested functions, and upvalue descriptions), and other
+metadata (e.g. debugging info).
+
+For each function prototype, any number of values may be
+instantiated (allocated) based on that prototype.  For example, this:
+
+  local t = {}
+  for i=1,10 do
+    t[i] = function() return i end
+  end
+	
+creates 10 function objects that all link to the same prototype of
+"function() return i end".*/
 typedef struct Proto {
   CommonHeader;
   TValue *k;  /* constants used by the function */
@@ -271,6 +310,8 @@ typedef struct LocVar {
 ** Upvalues
 */
 
+/*# This represents upvalues.  They are stored in a closure value (LClosure).
+Compare to Upvaldesc.*/
 typedef struct UpVal {
   CommonHeader;
   TValue *v;  /* points to stack or to its own value */
@@ -306,6 +347,8 @@ typedef struct LClosure {
 } LClosure;
 
 
+/*# Represents a closure (implemented via C Function or Lua function).
+These are linked to TValue's, among other places.*/
 typedef union Closure {
   CClosure c;
   LClosure l;
@@ -335,6 +378,15 @@ typedef struct Node {
 } Node;
 
 
+/*# Represents a Lua table ({}).
+These are linked to TValues.
+
+Note: each table can have an optional metatable and can have
+an array part (stored in array `array` of length `sizearray` and
+a hash part (stored in array `node` of length encoded in `lsizenode`).
+
+You can quickly check for certain metamethods via the `flags` field
+rather than looking in the metatable.*/
 typedef struct Table {
   CommonHeader;
   lu_byte flags;  /* 1<<p means tagmethod(p) is not present */ 
@@ -356,6 +408,7 @@ typedef struct Table {
 	(check_exp((size&(size-1))==0, (cast(int, (s) & ((size)-1)))))
 
 
+/*# Efficiently raises 2 to the integer x power.*/
 #define twoto(x)	(1<<(x))
 #define sizenode(t)	(twoto((t)->lsizenode))
 
@@ -378,4 +431,5 @@ LUAI_FUNC void luaO_chunkid (char *out, const char *source, size_t len);
 
 
 #endif
+
 

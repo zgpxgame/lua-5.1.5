@@ -1,3 +1,4 @@
+/*# This is the public interface of the "Auxiliary Library".*/
 /*
 ** $Id: lauxlib.h,v 1.88.1.1 2007/12/27 13:02:25 roberto Exp $
 ** Auxiliary functions for building Lua libraries
@@ -97,6 +98,8 @@ LUALIB_API const char *(luaL_findtable) (lua_State *L, int idx,
 ** ===============================================================
 */
 
+/*# void luaL_argcheck (lua_State *L, int cond, int narg, const char *extramsg);
+[-0, +0, v]*/
 #define luaL_argcheck(L, cond,numarg,extramsg)	\
 		((void)((cond) || luaL_argerror(L, (numarg), (extramsg))))
 #define luaL_checkstring(L,n)	(luaL_checklstring(L, (n), NULL))
@@ -170,5 +173,6 @@ LUALIB_API void (luaL_pushresult) (luaL_Buffer *B);
 #define luaL_reg	luaL_Reg
 
 #endif
+
 
 

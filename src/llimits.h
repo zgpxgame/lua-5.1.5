@@ -90,6 +90,7 @@ typedef lu_int32 Instruction;
 
 
 /* maximum stack for a Lua function */
+/*# Note: must fix in byte (lu_byte)--see Proto::maxstacksize.*/
 #define MAXSTACK	250
 
 
@@ -126,3 +127,4 @@ typedef lu_int32 Instruction;
 #endif
 
 #endif
+

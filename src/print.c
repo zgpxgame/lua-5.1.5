@@ -225,3 +225,4 @@ void PrintFunction(const Proto* f, int full)
  }
  for (i=0; i<n; i++) PrintFunction(f->p[i],full);
 }
+

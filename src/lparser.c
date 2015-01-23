@@ -27,6 +27,7 @@
 
 
 
+/*# Whether expkind k has multiple return values.*/
 #define hasmultret(k)		((k) == VCALL || (k) == VVARARG)
 
 #define getlocvar(fs, i)	((fs)->f->locvars[(fs)->actvar[i]])
@@ -1337,3 +1338,4 @@ static void chunk (LexState *ls) {
 }
 
 /* }====================================================================== */
+

@@ -1,3 +1,4 @@
+/*# This is the public interface to the core Lua library.*/
 /*
 ** $Id: lua.h,v 1.218.1.7 2012/01/13 20:36:20 roberto Exp $
 ** Lua - An Extensible Extension Language
@@ -18,12 +19,20 @@
 
 #define LUA_VERSION	"Lua 5.1"
 #define LUA_RELEASE	"Lua 5.1.5"
+/*# This is the number exposed by lua_version().
+Note: 502 mean "5.2".  501 means "5.1"*/
 #define LUA_VERSION_NUM	501
 #define LUA_COPYRIGHT	"Copyright (C) 1994-2012 Lua.org, PUC-Rio"
 #define LUA_AUTHORS 	"R. Ierusalimschy, L. H. de Figueiredo & W. Celes"
 
 
 /* mark for precompiled code (`<esc>Lua') */
+/*# Lua bytecode always starts with a signature consisting
+of these bytes.  Both Lua 5.1 and 5.2 start with this
+signature.  Some functions like load() determine whether
+a file is Lua source code or Lua byte code by looking
+for this signature.  The \033 (escape) character is not
+a valid first character in Lua source code.*/
 #define	LUA_SIGNATURE	"\033Lua"
 
 /* option for multiple returns in `lua_pcall' and `lua_call' */
@@ -44,6 +53,7 @@
 #define LUA_ERRRUN	2
 #define LUA_ERRSYNTAX	3
 #define LUA_ERRMEM	4
+/*# Note: see also LUA_ERRFILE in lauxlib.h.*/
 #define LUA_ERRERR	5
 
 
@@ -84,6 +94,13 @@ typedef void * (*lua_Alloc) (void *ud, void *ptr, size_t osize, size_t nsize);
 
 
 /* minimum Lua stack available to a C function */
+/*# From the reference manual:
+Whenever Lua calls C, it ensures that at least
+LUA_MINSTACK stack positions are available.
+LUA_MINSTACK is defined as 20, so that usually
+you do not have to worry about stack space
+unless your code has loops pushing elements
+onto the stack.*/
 #define LUA_MINSTACK	20
 
 
@@ -96,10 +113,12 @@ typedef void * (*lua_Alloc) (void *ud, void *ptr, size_t osize, size_t nsize);
 
 
 /* type of numbers in Lua */
+/*# Typically set to double on PCs.*/
 typedef LUA_NUMBER lua_Number;
 
 
 /* type for integer functions */
+/*# Typically set to int (32-bit) on PCs.*/
 typedef LUA_INTEGER lua_Integer;
 
 
@@ -386,3 +405,4 @@ struct lua_Debug {
 
 
 #endif
+

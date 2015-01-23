@@ -31,3 +31,4 @@ LUAI_FUNC int luaG_checkcode (const Proto *pt);
 LUAI_FUNC int luaG_checkopenop (Instruction i);
 
 #endif
+

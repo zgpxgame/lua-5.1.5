@@ -10,9 +10,20 @@
 #include "lobject.h"
 
 
+/*# Table*, int -> Node*
+Gets i-th node in table's hashpart array.
+(Question: why isn't there a corresponding function
+to get the i-th node in table's arraypart array? or why
+have this macro at all?)*/
 #define gnode(t,i)	(&(t)->node[i])
+/*# Node* -> TValue*
+Gets node key's TValue.*/
 #define gkey(n)		(&(n)->i_key.nk)
+/*# Node* -> TValue*
+Gets node value's TValue.*/
 #define gval(n)		(&(n)->i_val)
+/*# Node* -> Node*
+Gets node following given node in chain of nodes.*/
 #define gnext(n)	((n)->i_key.nk.next)
 
 #define key2tval(n)	(&(n)->i_key.tvk)
@@ -38,3 +49,4 @@ LUAI_FUNC int luaH_isdummy (Node *n);
 
 
 #endif
+

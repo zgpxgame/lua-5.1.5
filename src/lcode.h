@@ -36,6 +36,7 @@ typedef enum BinOpr {
 typedef enum UnOpr { OPR_MINUS, OPR_NOT, OPR_LEN, OPR_NOUNOPR } UnOpr;
 
 
+/*# FuncState*, expdesc* -> int*/
 #define getcode(fs,e)	((fs)->f->code[(e)->u.s.info])
 
 #define luaK_codeAsBx(fs,o,A,sBx)	luaK_codeABx(fs,o,A,(sBx)+MAXARG_sBx)
@@ -74,3 +75,4 @@ LUAI_FUNC void luaK_setlist (FuncState *fs, int base, int nelems, int tostore);
 
 
 #endif
+

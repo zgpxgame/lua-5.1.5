@@ -81,7 +81,9 @@ enum OpMode {iABC, iABx, iAsBx};  /* basic instruction format */
 #define SET_OPCODE(i,o)	((i) = (((i)&MASK0(SIZE_OP,POS_OP)) | \
 		((cast(Instruction, o)<<POS_OP)&MASK1(SIZE_OP,POS_OP))))
 
+/*# Gets integer A fields bits of Instruction i.*/
 #define GETARG_A(i)	(cast(int, ((i)>>POS_A) & MASK1(SIZE_A,0)))
+/*# Sets (in-place) A field bits of Instruction i to integer v.*/
 #define SETARG_A(i,u)	((i) = (((i)&MASK0(SIZE_A,POS_A)) | \
 		((cast(Instruction, u)<<POS_A)&MASK1(SIZE_A,POS_A))))
 
@@ -101,6 +103,7 @@ enum OpMode {iABC, iABx, iAsBx};  /* basic instruction format */
 #define SETARG_sBx(i,b)	SETARG_Bx((i),cast(unsigned int, (b)+MAXARG_sBx))
 
 
+/*# Returns Instruction formed from opcode (OpCode) o and given integer A, B, C fields.*/
 #define CREATE_ABC(o,a,b,c)	((cast(Instruction, o)<<POS_OP) \
 			| (cast(Instruction, a)<<POS_A) \
 			| (cast(Instruction, b)<<POS_B) \
@@ -266,3 +269,4 @@ LUAI_DATA const char *const luaP_opnames[NUM_OPCODES+1];  /* opcode names */
 
 
 #endif
+
