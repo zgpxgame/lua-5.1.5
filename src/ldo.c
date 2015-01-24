@@ -210,10 +210,15 @@ static StkId adjust_varargs (lua_State *L, Proto *p, int actual) {
   int nfixargs = p->numparams;
   Table *htab = NULL;
   StkId base, fixed;
+  /* 将缺失的固定参数的值设为nil */
   for (; actual < nfixargs; ++actual)
     setnilvalue(L->top++);
 #if defined(LUA_COMPAT_VARARG)
   if (p->is_vararg & VARARG_NEEDSARG) { /* compat. with old-style vararg? */
+    /*
+	* 兼容旧有的取可变参数的方式
+	* arg[1] 为第一个可变参数 arg[N] 为第N个可变参数 arg.n 是可变参数的数量
+	*/
     int nvar = actual - nfixargs;  /* number of extra arguments */
     lua_assert(p->is_vararg & VARARG_HASARG);
     luaC_checkGC(L);
@@ -269,6 +274,7 @@ int luaD_precall (lua_State *L, StkId func, int nresults) {
     func = tryfuncTM(L, func);  /* check the `function' tag method */
   funcr = savestack(L, func);
   cl = &clvalue(func)->l;
+  /* 保存上一个函数的指令指针 */
   L->ci->savedpc = L->savedpc;
   if (!cl->isC) {  /* Lua function? prepare its call */
     CallInfo *ci;
@@ -276,6 +282,13 @@ int luaD_precall (lua_State *L, StkId func, int nresults) {
     Proto *p = cl->p;
     luaD_checkstack(L, p->maxstacksize);
     func = restorestack(L, funcr);
+	/*
+	* 调整可变参数
+	* 记录调用信息
+	* 开辟栈空间
+	* 调用HOOK
+	*/
+	/* base 指向第一个固定参数 */
     if (!p->is_vararg) {  /* no varargs? */
       base = func + 1;
       if (L->top > base + p->numparams)
@@ -286,6 +299,8 @@ int luaD_precall (lua_State *L, StkId func, int nresults) {
       base = adjust_varargs(L, p, nargs);
       func = restorestack(L, funcr);  /* previous call may change the stack */
     }
+
+	/* 记录本函数的信息 */
     ci = inc_ci(L);  /* now `enter' new function */
     ci->func = func;
     L->base = ci->base = base;
@@ -294,15 +309,18 @@ int luaD_precall (lua_State *L, StkId func, int nresults) {
     L->savedpc = p->code;  /* starting point */
     ci->tailcalls = 0;
     ci->nresults = nresults;
+
+	/* 当前函数的栈空间内的值都设为nil*/
     for (st = L->top; st < ci->top; st++)
       setnilvalue(st);
+
     L->top = ci->top;
     if (L->hookmask & LUA_MASKCALL) {
       L->savedpc++;  /* hooks assume 'pc' is already incremented */
       luaD_callhook(L, LUA_HOOKCALL, -1);
       L->savedpc--;  /* correct 'pc' */
     }
-    return PCRLUA;
+    return PCRLUA; /* call Lua function, PCR ==> Pre Call Result */
   }
   else {  /* if is a C function, call it */
     CallInfo *ci;
@@ -323,7 +341,7 @@ int luaD_precall (lua_State *L, StkId func, int nresults) {
       return PCRYIELD;
     else {
       luaD_poscall(L, L->top - n);
-      return PCRC;
+      return PCRC; /* call c function */
     }
   }
 }
