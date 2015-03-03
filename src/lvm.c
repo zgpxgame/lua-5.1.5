@@ -404,6 +404,20 @@ void luaV_execute (lua_State *L, int nexeccalls) {
     lua_assert(base <= L->top && L->top <= L->stack + L->stacksize);
     lua_assert(L->top == L->ci->top || luaG_checkopenop(i));
     switch (GET_OPCODE(i)) {
+      /* 
+	  ** Instruction Notation
+	  ** R(A) Register A (specified in instruction field A)
+	  ** R(B) Register B (specified in instruction field B)
+	  ** R(C) Register C (specified in instruction field C)
+	  ** PC Program Counter
+	  ** Kst(n) Element n in the constant list
+	  ** Upvalue[n] Name of upvalue with index n
+	  ** Gbl[sym] Global variable indexed by symbol sym
+	  ** RK(B) Register B or a constant index
+	  ** RK(C) Register C or a constant index
+	  ** sBx Signed displacement (in field sBx) for all kinds of jumps
+	  */
+
       /*
       ** MOVE A B R(A) := R(B)
       ** Copies the value of register R(B) into register R(A). If R(B) holds a table,
