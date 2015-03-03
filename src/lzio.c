@@ -31,7 +31,7 @@ int luaZ_fill (ZIO *z) {
   return char2int(*(z->p++));
 }
 
-
+/* 向前查看一个字符 */
 int luaZ_lookahead (ZIO *z) {
   if (z->n == 0) {
     if (luaZ_fill(z) == EOZ)
@@ -55,6 +55,7 @@ void luaZ_init (lua_State *L, ZIO *z, lua_Reader reader, void *data) {
 
 
 /* --------------------------------------------------------------- read --- */
+/* 从流中读取n个字节放入b中，返回缺少的字节数 */
 size_t luaZ_read (ZIO *z, void *b, size_t n) {
   while (n) {
     size_t m;

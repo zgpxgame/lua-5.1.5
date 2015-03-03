@@ -283,10 +283,11 @@ int luaD_precall (lua_State *L, StkId func, int nresults) {
     luaD_checkstack(L, p->maxstacksize);
     func = restorestack(L, funcr);
 	/*
-	* 调整可变参数
-	* 记录调用信息
-	* 开辟栈空间
-	* 调用HOOK
+	* 接下来做的事情：
+	*   根据函数可变数量参数来调整栈，得到栈基位置
+	*   记录调用信息
+	*   开辟栈空间
+	*   调用HOOK
 	*/
 	/* base 指向第一个固定参数 */
     if (!p->is_vararg) {  /* no varargs? */
