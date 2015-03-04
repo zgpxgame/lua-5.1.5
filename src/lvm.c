@@ -405,18 +405,18 @@ void luaV_execute (lua_State *L, int nexeccalls) {
     lua_assert(L->top == L->ci->top || luaG_checkopenop(i));
     switch (GET_OPCODE(i)) {
       /* 
-	  ** Instruction Notation
-	  ** R(A) Register A (specified in instruction field A)
-	  ** R(B) Register B (specified in instruction field B)
-	  ** R(C) Register C (specified in instruction field C)
-	  ** PC Program Counter
-	  ** Kst(n) Element n in the constant list
-	  ** Upvalue[n] Name of upvalue with index n
-	  ** Gbl[sym] Global variable indexed by symbol sym
-	  ** RK(B) Register B or a constant index
-	  ** RK(C) Register C or a constant index
-	  ** sBx Signed displacement (in field sBx) for all kinds of jumps
-	  */
+      ** Instruction Notation
+      ** R(A) Register A (specified in instruction field A)
+      ** R(B) Register B (specified in instruction field B)
+      ** R(C) Register C (specified in instruction field C)
+      ** PC Program Counter
+      ** Kst(n) Element n in the constant list
+      ** Upvalue[n] Name of upvalue with index n
+      ** Gbl[sym] Global variable indexed by symbol sym
+      ** RK(B) Register B or a constant index
+      ** RK(C) Register C or a constant index
+      ** sBx Signed displacement (in field sBx) for all kinds of jumps
+      */
 
       /*
       ** MOVE A B R(A) := R(B)
@@ -426,31 +426,31 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       ** The opcode for MOVE has a second purpose 每 it is also used in creating
       ** closures, always appearing after the CLOSURE instruction; see CLOSURE
       ** for more information.
-	  */
+      */
       case OP_MOVE: {
         setobjs2s(L, ra, RB(i));
         continue;
       }
 
       /*
-	  ** LOADK A Bx R(A) := Kst(Bx)
+      ** LOADK A Bx R(A) := Kst(Bx)
       ** Loads constant number Bx into register R(A). Constants are usually
       ** numbers or strings. Each function has its own constant list, or pool.
-	  */
+      */
       case OP_LOADK: {
         setobj2s(L, ra, KBx(i));
         continue;
       }
       
       /*
-	  ** LOADBOOL A B C R(A) := (Bool)B; if (C) PC++
-	  ** Loads a boolean value (true or false) into register R(A). true is usually
-	  ** encoded as an integer 1, false is always 0. If C is non-zero, then the next
-	  ** instruction is skipped (this is used when you have an assignment
-	  ** statement where the expression uses relational operators, e.g. M = K>5.)
-	  ** You can use any non-zero value for the boolean true in field B, but since
-	  ** you cannot use booleans as numbers in Lua, it＊s best to stick to 1 for true. 
-	  */
+      ** LOADBOOL A B C R(A) := (Bool)B; if (C) PC++
+      ** Loads a boolean value (true or false) into register R(A). true is usually
+      ** encoded as an integer 1, false is always 0. If C is non-zero, then the next
+      ** instruction is skipped (this is used when you have an assignment
+      ** statement where the expression uses relational operators, e.g. M = K>5.)
+      ** You can use any non-zero value for the boolean true in field B, but since
+      ** you cannot use booleans as numbers in Lua, it＊s best to stick to 1 for true. 
+      */
       case OP_LOADBOOL: {
         setbvalue(ra, GETARG_B(i));
         if (GETARG_C(i)) pc++;  /* skip next instruction (if C) */
@@ -458,11 +458,11 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
 
       /*
-	  ** LOADNIL A B R(A) := ... := R(B) := nil
-	  ** Sets a range of registers from R(A) to R(B) to nil. If a single register is to
-	  ** be assigned to, then R(A) = R(B). When two or more consecutive locals
-	  ** need to be assigned nil values, only a single LOADNIL is needed.
-	  */
+      ** LOADNIL A B R(A) := ... := R(B) := nil
+      ** Sets a range of registers from R(A) to R(B) to nil. If a single register is to
+      ** be assigned to, then R(A) = R(B). When two or more consecutive locals
+      ** need to be assigned nil values, only a single LOADNIL is needed.
+      */
       case OP_LOADNIL: {
         TValue *rb = RB(i);
         do {
@@ -472,14 +472,14 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
 
       /*
-	  ** GETUPVAL A B R(A) := UpValue[B]
-	  ** Copies the value in upvalue number B into register R(A). Each function
-	  ** may have its own upvalue list. This upvalue list is internal to the virtual
-	  ** machine; the list of upvalue name strings in a prototype is not mandatory.
-	  ** The opcode for GETUPVAL has a second purpose 每 it is also used in
-	  ** creating closures, always appearing after the CLOSURE instruction; see
-	  ** CLOSURE for more information.
-	  */
+      ** GETUPVAL A B R(A) := UpValue[B]
+      ** Copies the value in upvalue number B into register R(A). Each function
+      ** may have its own upvalue list. This upvalue list is internal to the virtual
+      ** machine; the list of upvalue name strings in a prototype is not mandatory.
+      ** The opcode for GETUPVAL has a second purpose 每 it is also used in
+      ** creating closures, always appearing after the CLOSURE instruction; see
+      ** CLOSURE for more information.
+      */
       case OP_GETUPVAL: {
         int b = GETARG_B(i);
         setobj2s(L, ra, cl->upvals[b]->v);
@@ -487,10 +487,10 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
 
       /*
-	  ** GETGLOBAL A Bx R(A) := Gbl[Kst(Bx)]
-	  ** Copies the value of the global variable whose name is given in constant
-	  ** number Bx into register R(A). The name constant must be a string.
-	  */
+      ** GETGLOBAL A Bx R(A) := Gbl[Kst(Bx)]
+      ** Copies the value of the global variable whose name is given in constant
+      ** number Bx into register R(A). The name constant must be a string.
+      */
       case OP_GETGLOBAL: {
         TValue g;
         TValue *rb = KBx(i);
@@ -501,21 +501,21 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
 
       /*
-	  ** GETTABLE A B C R(A) := R(B)[RK(C)]
-	  ** Copies the value from a table element into register R(A). The table is
-	  ** referenced by register R(B), while the index to the table is given by RK(C),
-	  ** which may be the value of register R(C) or a constant number.
-	  */
+      ** GETTABLE A B C R(A) := R(B)[RK(C)]
+      ** Copies the value from a table element into register R(A). The table is
+      ** referenced by register R(B), while the index to the table is given by RK(C),
+      ** which may be the value of register R(C) or a constant number.
+      */
       case OP_GETTABLE: {
         Protect(luaV_gettable(L, RB(i), RKC(i), ra));
         continue;
       }
 
       /*
-	  ** SETGLOBAL A Bx Gbl[Kst(Bx)] := R(A)
-	  ** Copies the value from register R(A) into the global variable whose name is
-	  ** given in constant number Bx. The name constant must be a string.
-	  */
+      ** SETGLOBAL A Bx Gbl[Kst(Bx)] := R(A)
+      ** Copies the value from register R(A) into the global variable whose name is
+      ** given in constant number Bx. The name constant must be a string.
+      */
       case OP_SETGLOBAL: {
         TValue g;
         sethvalue(L, &g, cl->env);
@@ -525,10 +525,10 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
 
       /*
-	  ** SETUPVAL A B UpValue[B] := R(A)
-	  ** Copies the value from register R(A) into the upvalue number B in the
-	  ** upvalue list for that function.
-	  */
+      ** SETUPVAL A B UpValue[B] := R(A)
+      ** Copies the value from register R(A) into the upvalue number B in the
+      ** upvalue list for that function.
+      */
       case OP_SETUPVAL: {
         UpVal *uv = cl->upvals[GETARG_B(i)];
         setobj(L, uv->v, ra);
@@ -537,32 +537,32 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
 
       /*
-	  ** SETTABLE A B C R(A)[RK(B)] := RK(C)
-	  ** Copies the value from register R(C) or a constant into a table element. The
-	  ** table is referenced by register R(A), while the index to the table is given by
-	  ** RK(B), which may be the value of register R(B) or a constant number.
-	  */
+      ** SETTABLE A B C R(A)[RK(B)] := RK(C)
+      ** Copies the value from register R(C) or a constant into a table element. The
+      ** table is referenced by register R(A), while the index to the table is given by
+      ** RK(B), which may be the value of register R(B) or a constant number.
+      */
       case OP_SETTABLE: {
         Protect(luaV_settable(L, ra, RKB(i), RKC(i)));
         continue;
       }
 
       /*
-	  ** NEWTABLE A B C R(A) := {} (size = B,C)
-	  ** Creates a new empty table at register R(A). B and C are the encoded size
-	  ** information for the array part and the hash part of the table, respectively.
-	  ** Appropriate values for B and C are set in order to avoid rehashing when
-	  ** initially populating the table with array values or hash key-value pairs.
-	  ** Operand B and C are both encoded as a ※floating point byte§ (so named in
-	  ** lobject.c) which is eeeeexxx in binary, where x is the mantissa and e
-	  ** is the exponent. The actual value is calculated as 1xxx*2^(eeeee-1) if
-	  ** eeeee is greater than 0 (a range of 8 to 15*2^30.) If eeeee is 0, the actual
-	  ** value is xxx (a range of 0 to 7.)
-	  ** If an empty table is created, both sizes are zero. If a table is created with a
-	  ** number of objects, the code generator counts the number of array
-	  ** elements and the number of hash elements. Then, each size value is
-	  ** rounded up and encoded in B and C using the floating point byte format.
-	  */
+      ** NEWTABLE A B C R(A) := {} (size = B,C)
+      ** Creates a new empty table at register R(A). B and C are the encoded size
+      ** information for the array part and the hash part of the table, respectively.
+      ** Appropriate values for B and C are set in order to avoid rehashing when
+      ** initially populating the table with array values or hash key-value pairs.
+      ** Operand B and C are both encoded as a ※floating point byte§ (so named in
+      ** lobject.c) which is eeeeexxx in binary, where x is the mantissa and e
+      ** is the exponent. The actual value is calculated as 1xxx*2^(eeeee-1) if
+      ** eeeee is greater than 0 (a range of 8 to 15*2^30.) If eeeee is 0, the actual
+      ** value is xxx (a range of 0 to 7.)
+      ** If an empty table is created, both sizes are zero. If a table is created with a
+      ** number of objects, the code generator counts the number of array
+      ** elements and the number of hash elements. Then, each size value is
+      ** rounded up and encoded in B and C using the floating point byte format.
+      */
       case OP_NEWTABLE: {
         int b = GETARG_B(i);
         int c = GETARG_C(i);
@@ -572,15 +572,15 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
 
       /*
-	  ** SELF A B C R(A+1) := R(B); R(A) := R(B)[RK(C)]
-	  ** For object-oriented programming using tables. Retrieves a function
-	  ** reference from a table element and places it in register R(A), then a
-	  ** reference to the table itself is placed in the next register, R(A+1). This
-	  ** instruction saves some messy manipulation when setting up a method call.
-	  ** R(B) is the register holding the reference to the table with the method. The
-	  ** method function itself is found using the table index RK(C), which may be
-	  ** the value of register R(C) or a constant number.
-	  */
+      ** SELF A B C R(A+1) := R(B); R(A) := R(B)[RK(C)]
+      ** For object-oriented programming using tables. Retrieves a function
+      ** reference from a table element and places it in register R(A), then a
+      ** reference to the table itself is placed in the next register, R(A+1). This
+      ** instruction saves some messy manipulation when setting up a method call.
+      ** R(B) is the register holding the reference to the table with the method. The
+      ** method function itself is found using the table index RK(C), which may be
+      ** the value of register R(C) or a constant number.
+      */
       case OP_SELF: {
         StkId rb = RB(i);
         setobjs2s(L, ra+1, rb);
@@ -589,19 +589,19 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
 
       /*
-	  ** ADD A B C R(A) := RK(B) + RK(C)
-	  ** SUB A B C R(A) := RK(B) 每 RK(C)
-	  ** MUL A B C R(A) := RK(B) * RK(C)
-	  ** DIV A B C R(A) := RK(B) / RK(C)
-	  ** MOD A B C R(A) := RK(B) % RK(C)
-	  ** POW A B C R(A) := RK(B) ^ RK(C)
-	  ** Binary operators (arithmetic operators with two inputs.) The result of the
-	  ** operation between RK(B) and RK(C) is placed into R(A). These
-	  ** instructions are in the classic 3-register style. RK(B) and RK(C) may be
-	  ** either registers or constants in the constant pool.
-	  ** ADD is addition. SUB is subtraction. MUL is multiplication. DIV is division.
-	  ** MOD is modulus (remainder). POW is exponentiation.
-	  */
+      ** ADD A B C R(A) := RK(B) + RK(C)
+      ** SUB A B C R(A) := RK(B) 每 RK(C)
+      ** MUL A B C R(A) := RK(B) * RK(C)
+      ** DIV A B C R(A) := RK(B) / RK(C)
+      ** MOD A B C R(A) := RK(B) % RK(C)
+      ** POW A B C R(A) := RK(B) ^ RK(C)
+      ** Binary operators (arithmetic operators with two inputs.) The result of the
+      ** operation between RK(B) and RK(C) is placed into R(A). These
+      ** instructions are in the classic 3-register style. RK(B) and RK(C) may be
+      ** either registers or constants in the constant pool.
+      ** ADD is addition. SUB is subtraction. MUL is multiplication. DIV is division.
+      ** MOD is modulus (remainder). POW is exponentiation.
+      */
       case OP_ADD: {
         arith_op(luai_numadd, TM_ADD);
         continue;
@@ -628,10 +628,10 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
 
       /*
-	  ** UNM A B R(A) := -R(B)
-	  ** Unary minus (arithmetic operator with one input.) R(B) is negated and the
-	  ** value placed in R(A). R(A) and R(B) are always registers.
-	  */
+      ** UNM A B R(A) := -R(B)
+      ** Unary minus (arithmetic operator with one input.) R(B) is negated and the
+      ** value placed in R(A). R(A) and R(B) are always registers.
+      */
       case OP_UNM: {
         TValue *rb = RB(i);
         if (ttisnumber(rb)) {
@@ -645,10 +645,10 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
 
       /*
-	  ** NOT A B R(A) := not R(B)
-	  ** Applies a boolean NOT to the value in R(B) and places the result in R(A).
-	  ** R(A) and R(B) are always registers.
-	  */
+      ** NOT A B R(A) := not R(B)
+      ** Applies a boolean NOT to the value in R(B) and places the result in R(A).
+      ** R(A) and R(B) are always registers.
+      */
       case OP_NOT: {
         int res = l_isfalse(RB(i));  /* next assignment may change this value */
         setbvalue(ra, res);
@@ -656,12 +656,12 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
 
       /*
-	  ** LEN A B R(A) := length of R(B)
-	  ** Returns the length of the object in R(B). For strings, the string length is
-	  ** returned, while for tables, the table size (as defined in Lua) is returned. For
-	  ** other objects, the metamethod is called. The result, which is a number, is
-	  ** placed in R(A).
-	  */
+      ** LEN A B R(A) := length of R(B)
+      ** Returns the length of the object in R(B). For strings, the string length is
+      ** returned, while for tables, the table size (as defined in Lua) is returned. For
+      ** other objects, the metamethod is called. The result, which is a number, is
+      ** placed in R(A).
+      */
       case OP_LEN: {
         const TValue *rb = RB(i);
         switch (ttype(rb)) {
@@ -684,12 +684,12 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
 
       /*
-	  ** CONCAT A B C R(A) := R(B).. ... ..R(C)
-	  ** Performs concatenation of two or more strings. In a Lua source, this is
-	  ** equivalent to one or more concatenation operators (＆..＊) between two or
-	  ** more expressions. The source registers must be consecutive, and C must
-	  ** always be greater than B. The result is placed in R(A).
-	  */
+      ** CONCAT A B C R(A) := R(B).. ... ..R(C)
+      ** Performs concatenation of two or more strings. In a Lua source, this is
+      ** equivalent to one or more concatenation operators (＆..＊) between two or
+      ** more expressions. The source registers must be consecutive, and C must
+      ** always be greater than B. The result is placed in R(A).
+      */
       case OP_CONCAT: {
         int b = GETARG_B(i);
         int c = GETARG_C(i);
@@ -699,33 +699,33 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
 
       /*
-	  ** JMP sBx PC += sBx
-	  ** Performs an unconditional jump, with sBx as a signed displacement. sBx is
-	  ** added to the program counter (PC), which points to the next instruction to
-	  ** be executed. E.g., if sBx is 0, the VM will proceed to the next instruction.
-	  ** JMP is used in loops, conditional statements, and in expressions when a
-	  ** boolean true/false need to be generated.
-	  */
+      ** JMP sBx PC += sBx
+      ** Performs an unconditional jump, with sBx as a signed displacement. sBx is
+      ** added to the program counter (PC), which points to the next instruction to
+      ** be executed. E.g., if sBx is 0, the VM will proceed to the next instruction.
+      ** JMP is used in loops, conditional statements, and in expressions when a
+      ** boolean true/false need to be generated.
+      */
       case OP_JMP: {
         dojump(L, pc, GETARG_sBx(i));
         continue;
       }
 
       /*
-	  ** EQ A B C if ((RK(B) == RK(C)) ~= A) then PC++
-	  ** LT A B C if ((RK(B) < RK(C)) ~= A) then PC++
-	  ** LE A B C if ((RK(B) <= RK(C)) ~= A) then PC++
-	  ** Compares RK(B) and RK(C), which may be registers or constants. If the
-	  ** boolean result is not A, then skip the next instruction. Conversely, if the
-	  ** boolean result equals A, continue with the next instruction.
-	  ** EQ is for equality. LT is for ※less than§ comparison. LE is for ※less than or
-	  ** equal to§ comparison. The boolean A field allows the full set of relational
-	  ** comparison operations to be synthesized from these three instructions.
-	  ** The Lua code generator produces either 0 or 1 for the boolean A.
-	  ** For the fall-through case, a JMP is always expected, in order to optimize
-	  ** execution in the virtual machine. In effect, EQ, LT and LE must always be
-	  ** paired with a following JMP instruction.
-	  */
+      ** EQ A B C if ((RK(B) == RK(C)) ~= A) then PC++
+      ** LT A B C if ((RK(B) < RK(C)) ~= A) then PC++
+      ** LE A B C if ((RK(B) <= RK(C)) ~= A) then PC++
+      ** Compares RK(B) and RK(C), which may be registers or constants. If the
+      ** boolean result is not A, then skip the next instruction. Conversely, if the
+      ** boolean result equals A, continue with the next instruction.
+      ** EQ is for equality. LT is for ※less than§ comparison. LE is for ※less than or
+      ** equal to§ comparison. The boolean A field allows the full set of relational
+      ** comparison operations to be synthesized from these three instructions.
+      ** The Lua code generator produces either 0 or 1 for the boolean A.
+      ** For the fall-through case, a JMP is always expected, in order to optimize
+      ** execution in the virtual machine. In effect, EQ, LT and LE must always be
+      ** paired with a following JMP instruction.
+      */
       case OP_EQ: {
         TValue *rb = RKB(i);
         TValue *rc = RKC(i);
@@ -754,22 +754,22 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
 
       /*
-	  ** TEST A C if not (R(A) <=> C) then PC++
-	  ** TESTSET A B C if (R(B) <=> C) then R(A) := R(B) else PC++
-	  ** Used to implement and and or logical operators, or for testing a single
-	  ** register in a conditional statement.
-	  ** For TESTSET, register R(B) is coerced into a boolean and compared to
-	  ** the boolean field C. If R(B) matches C, the next instruction is skipped,
-	  ** otherwise R(B) is assigned to R(A) and the VM continues with the next
-	  ** instruction. The and operator uses a C of 0 (false) while or uses a C value
-	  ** of 1 (true).
-	  ** TEST is a more primitive version of TESTSET. TEST is used when the
-	  ** assignment operation is not needed, otherwise it is the same as TESTSET
-	  ** except that the operand slots are different.
-	  ** For the fall-through case, a JMP is always expected, in order to optimize
-	  ** execution in the virtual machine. In effect, TEST and TESTSET must
-	  ** always be paired with a following JMP instruction.
-	  */
+      ** TEST A C if not (R(A) <=> C) then PC++
+      ** TESTSET A B C if (R(B) <=> C) then R(A) := R(B) else PC++
+      ** Used to implement and and or logical operators, or for testing a single
+      ** register in a conditional statement.
+      ** For TESTSET, register R(B) is coerced into a boolean and compared to
+      ** the boolean field C. If R(B) matches C, the next instruction is skipped,
+      ** otherwise R(B) is assigned to R(A) and the VM continues with the next
+      ** instruction. The and operator uses a C of 0 (false) while or uses a C value
+      ** of 1 (true).
+      ** TEST is a more primitive version of TESTSET. TEST is used when the
+      ** assignment operation is not needed, otherwise it is the same as TESTSET
+      ** except that the operand slots are different.
+      ** For the fall-through case, a JMP is always expected, in order to optimize
+      ** execution in the virtual machine. In effect, TEST and TESTSET must
+      ** always be paired with a following JMP instruction.
+      */
       case OP_TEST: {
         if (l_isfalse(ra) != GETARG_C(i))
           dojump(L, pc, GETARG_sBx(*pc));
@@ -787,21 +787,21 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
 
       /*
-	  ** CALL A B C R(A), ... ,R(A+C-2) := R(A)(R(A+1), ... ,R(A+B-1))
-	  ** Performs a function call, with register R(A) holding the reference to the
-	  ** function object to be called. Parameters to the function are placed in the
-	  ** registers following R(A). If B is 1, the function has no parameters. If B is 2
-	  ** or more, there are (B-1) parameters.
-	  ** If B is 0, the function parameters range from R(A+1) to the top of the stack.
-	  ** This form is used when the last expression in the parameter list is a
-	  ** function call, so the number of actual parameters is indeterminate.
-	  ** Results returned by the function call is placed in a range of registers
-	  ** starting from R(A). If C is 1, no return results are saved. If C is 2 or more,
-	  ** (C-1) return values are saved. If C is 0, then multiple return results are
-	  ** saved, depending on the called function.
-	  ** CALL always updates the top of stack value. CALL, RETURN, VARARG
-	  ** and SETLIST can use multiple values (up to the top of the stack.)
-	  */
+      ** CALL A B C R(A), ... ,R(A+C-2) := R(A)(R(A+1), ... ,R(A+B-1))
+      ** Performs a function call, with register R(A) holding the reference to the
+      ** function object to be called. Parameters to the function are placed in the
+      ** registers following R(A). If B is 1, the function has no parameters. If B is 2
+      ** or more, there are (B-1) parameters.
+      ** If B is 0, the function parameters range from R(A+1) to the top of the stack.
+      ** This form is used when the last expression in the parameter list is a
+      ** function call, so the number of actual parameters is indeterminate.
+      ** Results returned by the function call is placed in a range of registers
+      ** starting from R(A). If C is 1, no return results are saved. If C is 2 or more,
+      ** (C-1) return values are saved. If C is 0, then multiple return results are
+      ** saved, depending on the called function.
+      ** CALL always updates the top of stack value. CALL, RETURN, VARARG
+      ** and SETLIST can use multiple values (up to the top of the stack.)
+      */
       case OP_CALL: {
         int b = GETARG_B(i);
         int nresults = GETARG_C(i) - 1;
@@ -825,17 +825,17 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
 
       /*
-	  ** TAILCALL A B C return R(A)(R(A+1), ... ,R(A+B-1))
-	  ** Performs a tail call, which happens when a return statement has a single
-	  ** function call as the expression, e.g. return foo(bar). A tail call is
-	  ** effectively a goto, and avoids nesting calls another level deeper. Only Lua
-	  ** functions can be tailcalled.
-	  ** Like CALL, register R(A) holds the reference to the function object to be
-	  ** called. B encodes the number of parameters in the same manner as a
-	  ** CALL instruction.
-	  ** C isn＊t used by TAILCALL, since all return results are significant. In any
-	  ** case, Lua always generates a 0 for C, to denote multiple return results.
-	  */
+      ** TAILCALL A B C return R(A)(R(A+1), ... ,R(A+B-1))
+      ** Performs a tail call, which happens when a return statement has a single
+      ** function call as the expression, e.g. return foo(bar). A tail call is
+      ** effectively a goto, and avoids nesting calls another level deeper. Only Lua
+      ** functions can be tailcalled.
+      ** Like CALL, register R(A) holds the reference to the function object to be
+      ** called. B encodes the number of parameters in the same manner as a
+      ** CALL instruction.
+      ** C isn＊t used by TAILCALL, since all return results are significant. In any
+      ** case, Lua always generates a 0 for C, to denote multiple return results.
+      */
       case OP_TAILCALL: {
         int b = GETARG_B(i);
         if (b != 0) L->top = ra+b;  /* else previous instruction set top */
@@ -870,16 +870,16 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
 
       /*
-	  ** RETURN A B return R(A), ... ,R(A+B-2)
-	  ** Returns to the calling function, with optional return values. If B is 1, there
-	  ** are no return values. If B is 2 or more, there are (B-1) return values,
-	  ** located in consecutive registers from R(A) onwards.
-	  ** If B is 0, the set of values from R(A) to the top of the stack is returned. This
-	  ** form is used when the last expression in the return list is a function call, so
-	  ** the number of actual values returned is indeterminate.
-	  ** RETURN also closes any open upvalues, equivalent to a CLOSE
-	  ** instruction. See the CLOSE instruction for more information.
-	  */
+      ** RETURN A B return R(A), ... ,R(A+B-2)
+      ** Returns to the calling function, with optional return values. If B is 1, there
+      ** are no return values. If B is 2 or more, there are (B-1) return values,
+      ** located in consecutive registers from R(A) onwards.
+      ** If B is 0, the set of values from R(A) to the top of the stack is returned. This
+      ** form is used when the last expression in the return list is a function call, so
+      ** the number of actual values returned is indeterminate.
+      ** RETURN also closes any open upvalues, equivalent to a CLOSE
+      ** instruction. See the CLOSE instruction for more information.
+      */
       case OP_RETURN: {
         int b = GETARG_B(i);
         if (b != 0) L->top = ra+b-1;
@@ -897,37 +897,37 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
 
       /*
-	  ** FORPREP A sBx R(A) -= R(A+2); PC += sBx
-	  ** FORLOOP A sBx R(A) += R(A+2)
-	  **               if R(A) <?= R(A+1) then {
-	  **                 PC += sBx; R(A+3) = R(A)
-	  **               }
-	  ** FORPREP initializes a numeric for loop, while FORLOOP performs an
-	  ** iteration of a numeric for loop.
-	  ** A numeric for loop requires 4 registers on the stack, and each register
-	  ** must be a number. R(A) holds the initial value and doubles as the internal
-	  ** loop variable (the internal index); R(A+1) is the limit; R(A+2) is the stepping
-	  ** value; R(A+3) is the actual loop variable (the external index) that is local to
-	  ** the for block.
-	  ** FORPREP sets up a for loop. Since FORLOOP is used for initial testing of
-	  ** the loop condition as well as conditional testing during the loop itself,
-	  ** FORPREP performs a negative step and jumps unconditionally to
-	  ** FORLOOP so that FORLOOP is able to correctly make the initial loop test.
-	  ** After this initial test, FORLOOP performs a loop step as usual, restoring
-	  ** the initial value of the loop index so that the first iteration can start.
-	  ** In FORLOOP, a jump is made back to the start of the loop body if the limit
-	  ** has not been reached or exceeded. The sense of the comparison depends
-	  ** on whether the stepping is negative or positive, hence the ※<?=§ operator.
-	  ** Jumps for both instructions are encoded as signed displacements in the
-	  ** sBx field. An empty loop has a FORLOOP sBx value of -1.
-	  ** FORLOOP also sets R(A+3), the external loop index that is local to the
-	  ** loop block. This is significant if the loop index is used as an upvalue (see
-	  ** below.) R(A), R(A+1) and R(A+2) are not visible to the programmer.
-	  ** The loop variable ends with the last value before the limit is reached
-	  ** (unlike C) because it is not updated unless the jump is made. However,
-	  ** since loop variables are local to the loop itself, you should not be able to
-	  ** use it unless you cook up an implementation-specific hack.
-	  */
+      ** FORPREP A sBx R(A) -= R(A+2); PC += sBx
+      ** FORLOOP A sBx R(A) += R(A+2)
+      **               if R(A) <?= R(A+1) then {
+      **                 PC += sBx; R(A+3) = R(A)
+      **               }
+      ** FORPREP initializes a numeric for loop, while FORLOOP performs an
+      ** iteration of a numeric for loop.
+      ** A numeric for loop requires 4 registers on the stack, and each register
+      ** must be a number. R(A) holds the initial value and doubles as the internal
+      ** loop variable (the internal index); R(A+1) is the limit; R(A+2) is the stepping
+      ** value; R(A+3) is the actual loop variable (the external index) that is local to
+      ** the for block.
+      ** FORPREP sets up a for loop. Since FORLOOP is used for initial testing of
+      ** the loop condition as well as conditional testing during the loop itself,
+      ** FORPREP performs a negative step and jumps unconditionally to
+      ** FORLOOP so that FORLOOP is able to correctly make the initial loop test.
+      ** After this initial test, FORLOOP performs a loop step as usual, restoring
+      ** the initial value of the loop index so that the first iteration can start.
+      ** In FORLOOP, a jump is made back to the start of the loop body if the limit
+      ** has not been reached or exceeded. The sense of the comparison depends
+      ** on whether the stepping is negative or positive, hence the ※<?=§ operator.
+      ** Jumps for both instructions are encoded as signed displacements in the
+      ** sBx field. An empty loop has a FORLOOP sBx value of -1.
+      ** FORLOOP also sets R(A+3), the external loop index that is local to the
+      ** loop block. This is significant if the loop index is used as an upvalue (see
+      ** below.) R(A), R(A+1) and R(A+2) are not visible to the programmer.
+      ** The loop variable ends with the last value before the limit is reached
+      ** (unlike C) because it is not updated unless the jump is made. However,
+      ** since loop variables are local to the loop itself, you should not be able to
+      ** use it unless you cook up an implementation-specific hack.
+      */
       case OP_FORLOOP: {
         lua_Number step = nvalue(ra+2);
         lua_Number idx = luai_numadd(nvalue(ra), step); /* increment index */
@@ -957,37 +957,37 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
 
       /*
-	  ** TFORLOOP A C R(A+3), ... ,R(A+2+C) := R(A)(R(A+1), R(A+2));
-	  **              if R(A+3) ~= nil then {
-	  **                R(A+2) = R(A+3);
-	  **              } else {
-	  **                PC++;
-	  **              }
-	  ** Performs an iteration of a generic for loop. A Lua 5-style generic for loop
-	  ** keeps 3 items in consecutive register locations to keep track of things. R(A)
-	  ** is the iterator function, which is called once per loop. R(A+1) is the state,
-	  ** and R(A+2) is the enumeration index. At the start, R(A+2) has an initial
-	  ** value. R(A), R(A+1) and R(A+2) are internal to the loop and cannot be
-	  ** accessed by the programmer; at first, they are set with an initial state.
-	  ** In addition to these internal loop variables, the programmer specifies one
-	  ** or more loop variables that are external and visible to the programmer.
-	  ** These loop variables reside at locations R(A+3) onwards, and their count is
-	  ** specified in operand C. Operand C must be at least 1. They are also local
-	  ** to the loop body, like the external loop index in a numerical for loop.
-	  ** Each time TFORLOOP executes, the iterator function referenced by R(A)
-	  ** is called with two arguments: the state and the enumeration index (R(A+1)
-	  ** and R(A+2).) The results are returned in the local loop variables, from
-	  ** R(A+3) onwards, up to R(A+2+C).
-	  ** Next, the first return value, R(A+3), is tested. If it is nil, the iterator loop is
-	  ** at an end, and TFORLOOP skips the next instruction and the for loop
-	  ** block ends. Note that the state of the generic for loop does not depend on
-	  ** any of the external iterator variables that are visible to the programmer.
-	  ** If R(A+3) is not nil, there is another iteration, and R(A+3) is assigned as
-	  ** the new value of the enumeration index, R(A+2). Then next instruction,
-	  ** which must be a JMP, is immediately executed, sending execution back to
-	  ** the beginning of the loop. This is an optimization case; TFORLOOP will not
-	  ** work correctly without the JMP instruction.
-	  */
+      ** TFORLOOP A C R(A+3), ... ,R(A+2+C) := R(A)(R(A+1), R(A+2));
+      **              if R(A+3) ~= nil then {
+      **                R(A+2) = R(A+3);
+      **              } else {
+      **                PC++;
+      **              }
+      ** Performs an iteration of a generic for loop. A Lua 5-style generic for loop
+      ** keeps 3 items in consecutive register locations to keep track of things. R(A)
+      ** is the iterator function, which is called once per loop. R(A+1) is the state,
+      ** and R(A+2) is the enumeration index. At the start, R(A+2) has an initial
+      ** value. R(A), R(A+1) and R(A+2) are internal to the loop and cannot be
+      ** accessed by the programmer; at first, they are set with an initial state.
+      ** In addition to these internal loop variables, the programmer specifies one
+      ** or more loop variables that are external and visible to the programmer.
+      ** These loop variables reside at locations R(A+3) onwards, and their count is
+      ** specified in operand C. Operand C must be at least 1. They are also local
+      ** to the loop body, like the external loop index in a numerical for loop.
+      ** Each time TFORLOOP executes, the iterator function referenced by R(A)
+      ** is called with two arguments: the state and the enumeration index (R(A+1)
+      ** and R(A+2).) The results are returned in the local loop variables, from
+      ** R(A+3) onwards, up to R(A+2+C).
+      ** Next, the first return value, R(A+3), is tested. If it is nil, the iterator loop is
+      ** at an end, and TFORLOOP skips the next instruction and the for loop
+      ** block ends. Note that the state of the generic for loop does not depend on
+      ** any of the external iterator variables that are visible to the programmer.
+      ** If R(A+3) is not nil, there is another iteration, and R(A+3) is assigned as
+      ** the new value of the enumeration index, R(A+2). Then next instruction,
+      ** which must be a JMP, is immediately executed, sending execution back to
+      ** the beginning of the loop. This is an optimization case; TFORLOOP will not
+      ** work correctly without the JMP instruction.
+      */
       case OP_TFORLOOP: {
         StkId cb = ra + 3;  /* call base */
         setobjs2s(L, cb+2, ra+2);
@@ -1006,21 +1006,21 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
 
       /*
-	  ** SETLIST A B C R(A)[(C-1)*FPF+i] := R(A+i), 1 <= i <= B
-	  ** Sets the values for a range of array elements in a table referenced by
-	  ** R(A). Field B is the number of elements to set. Field C encodes the block
-	  ** number of the table to be initialized. The values used to initialize the table
-	  ** are located in registers R(A+1), R(A+2), and so on.
-	  ** The block size is denoted by FPF. FPF is ※fields per flush§, defined as
-	  ** LFIELDS_PER_FLUSH in the source file lopcodes.h, with a value of 50.
-	  ** For example, for array locations 1 to 20, C will be 1 and B will be 20.
-	  ** If B is 0, the table is set with a variable number of array elements, from
-	  ** register R(A+1) up to the top of the stack. This happens when the last
-	  ** element in the table constructor is a function call or a vararg operator.
-	  ** If C is 0, the next instruction is cast as an integer, and used as the C value.
-	  ** This happens only when operand C is unable to encode the block number,
-	  ** i.e. when C > 511, equivalent to an array index greater than 25550.
-	  */
+      ** SETLIST A B C R(A)[(C-1)*FPF+i] := R(A+i), 1 <= i <= B
+      ** Sets the values for a range of array elements in a table referenced by
+      ** R(A). Field B is the number of elements to set. Field C encodes the block
+      ** number of the table to be initialized. The values used to initialize the table
+      ** are located in registers R(A+1), R(A+2), and so on.
+      ** The block size is denoted by FPF. FPF is ※fields per flush§, defined as
+      ** LFIELDS_PER_FLUSH in the source file lopcodes.h, with a value of 50.
+      ** For example, for array locations 1 to 20, C will be 1 and B will be 20.
+      ** If B is 0, the table is set with a variable number of array elements, from
+      ** register R(A+1) up to the top of the stack. This happens when the last
+      ** element in the table constructor is a function call or a vararg operator.
+      ** If C is 0, the next instruction is cast as an integer, and used as the C value.
+      ** This happens only when operand C is unable to encode the block number,
+      ** i.e. when C > 511, equivalent to an array index greater than 25550.
+      */
       case OP_SETLIST: {
         int n = GETARG_B(i);
         int c = GETARG_C(i);
@@ -1045,37 +1045,37 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
 
       /*
-	  ** CLOSE A close all variables in the stack up to (>=) R(A)
-	  ** Closes all local variables in the stack from register R(A) onwards. This
-	  ** instruction is only generated if there is an upvalue present within those
-	  ** local variables. It has no effect if a local isn＊t used as an upvalue.
-	  ** If a local is used as an upvalue, then the local variable need to be placed
-	  ** somewhere, otherwise it will go out of scope and disappear when a lexical
-	  ** block enclosing the local variable ends. CLOSE performs this operation for
-	  ** all affected local variables for do end blocks or loop blocks. RETURN also
-	  ** does an implicit CLOSE when a function returns.
-	  */
+      ** CLOSE A close all variables in the stack up to (>=) R(A)
+      ** Closes all local variables in the stack from register R(A) onwards. This
+      ** instruction is only generated if there is an upvalue present within those
+      ** local variables. It has no effect if a local isn＊t used as an upvalue.
+      ** If a local is used as an upvalue, then the local variable need to be placed
+      ** somewhere, otherwise it will go out of scope and disappear when a lexical
+      ** block enclosing the local variable ends. CLOSE performs this operation for
+      ** all affected local variables for do end blocks or loop blocks. RETURN also
+      ** does an implicit CLOSE when a function returns.
+      */
       case OP_CLOSE: {
         luaF_close(L, ra);
         continue;
       }
 
       /*
-	  ** CLOSURE A Bx R(A) := closure(KPROTO[Bx], R(A), ... ,R(A+n))
-	  ** Creates an instance (or closure) of a function. Bx is the function number of
-	  ** the function to be instantiated in the table of function prototypes. This table
-	  ** is located after the constant table for each function in a binary chunk. The
-	  ** first function prototype is numbered 0. Register R(A) is assigned the
-	  ** reference to the instantiated function object.
-	  ** For each upvalue used by the instance of the function KPROTO[Bx], there
-	  ** is a pseudo-instruction that follows CLOSURE. Each upvalue corresponds
-	  ** to either a MOVE or a GETUPVAL pseudo-instruction. Only the B field on
-	  ** either of these pseudo-instructions are significant.
-	  ** A MOVE corresponds to local variable R(B) in the current lexical block,
-	  ** which will be used as an upvalue in the instantiated function. A
-	  ** GETUPVAL corresponds upvalue number B in the current lexical block.
-	  ** The VM uses these pseudo-instructions to manage upvalues.
-	  */
+      ** CLOSURE A Bx R(A) := closure(KPROTO[Bx], R(A), ... ,R(A+n))
+      ** Creates an instance (or closure) of a function. Bx is the function number of
+      ** the function to be instantiated in the table of function prototypes. This table
+      ** is located after the constant table for each function in a binary chunk. The
+      ** first function prototype is numbered 0. Register R(A) is assigned the
+      ** reference to the instantiated function object.
+      ** For each upvalue used by the instance of the function KPROTO[Bx], there
+      ** is a pseudo-instruction that follows CLOSURE. Each upvalue corresponds
+      ** to either a MOVE or a GETUPVAL pseudo-instruction. Only the B field on
+      ** either of these pseudo-instructions are significant.
+      ** A MOVE corresponds to local variable R(B) in the current lexical block,
+      ** which will be used as an upvalue in the instantiated function. A
+      ** GETUPVAL corresponds upvalue number B in the current lexical block.
+      ** The VM uses these pseudo-instructions to manage upvalues.
+      */
       case OP_CLOSURE: {
         Proto *p;
         Closure *ncl;
@@ -1098,14 +1098,14 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
 
       /*
-	  ** VARARG A B R(A), R(A+1), ..., R(A+B-1) = vararg
-	  ** VARARG implements the vararg operator ＆...＊ in expressions. VARARG
-	  ** copies B-1 parameters into a number of registers starting from R(A),
-	  ** padding with nils if there aren＊t enough values. If B is 0, VARARG copies
-	  ** as many values as it can based on the number of parameters passed. If a
-	  ** fixed number of values is required, B is a value greater than 1. If any
-	  ** number of values is required, B is 0.
-	  */
+      ** VARARG A B R(A), R(A+1), ..., R(A+B-1) = vararg
+      ** VARARG implements the vararg operator ＆...＊ in expressions. VARARG
+      ** copies B-1 parameters into a number of registers starting from R(A),
+      ** padding with nils if there aren＊t enough values. If B is 0, VARARG copies
+      ** as many values as it can based on the number of parameters passed. If a
+      ** fixed number of values is required, B is a value greater than 1. If any
+      ** number of values is required, B is 0.
+      */
       case OP_VARARG: {
         int b = GETARG_B(i) - 1;
         int j;
