@@ -301,6 +301,7 @@ void luaV_concat (lua_State *L, int total, int last) {
       }
       buffer = luaZ_openspace(L, &G(L)->buff, tl);
       tl = 0;
+	  /* 将n个字符串连接起来 */
       for (i=n; i>0; i--) {  /* concat all strings */
         size_t l = tsvalue(top-i)->len;
         memcpy(buffer+tl, svalue(top-i), l);
