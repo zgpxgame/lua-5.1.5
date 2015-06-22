@@ -8,10 +8,11 @@
 PLAT= none
 
 CC= gcc
-CFLAGS= -O2 -Wall $(MYCFLAGS)
+# CFLAGS= -O2 -Wall $(MYCFLAGS)
+CFLAGS= -g -Wall $(MYCFLAGS)
 AR= ar rcu
 RANLIB= ranlib
-RM= rm -f
+RM= del
 LIBS= -lm $(MYLIBS)
 
 MYCFLAGS=
@@ -47,15 +48,16 @@ o:	$(ALL_O)
 
 a:	$(ALL_A)
 
+# DLL needs all object files
 $(LUA_A): $(CORE_O) $(LIB_O)
-	$(AR) $@ $(CORE_O) $(LIB_O)	# DLL needs all object files
+	$(AR) $@ $(CORE_O) $(LIB_O)
 	$(RANLIB) $@
 
 $(LUA_T): $(LUA_O) $(LUA_A)
-	$(CC) -o $@ $(MYLDFLAGS) $(LUA_O) $(LUA_A) $(LIBS)
+	$(CC) -g -o $@ $(MYLDFLAGS) $(LUA_O) $(LUA_A) $(LIBS)
 
 $(LUAC_T): $(LUAC_O) $(LUA_A)
-	$(CC) -o $@ $(MYLDFLAGS) $(LUAC_O) $(LUA_A) $(LIBS)
+	$(CC) -g -o $@ $(MYLDFLAGS) $(LUAC_O) $(LUA_A) $(LIBS)
 
 clean:
 	$(RM) $(ALL_T) $(ALL_O)
@@ -105,8 +107,8 @@ macosx:
 
 mingw:
 	$(MAKE) "LUA_A=lua51.dll" "LUA_T=lua.exe" \
-	"AR=$(CC) -shared -o" "RANLIB=strip --strip-unneeded" \
-	"MYCFLAGS=-DLUA_BUILD_AS_DLL" "MYLIBS=" "MYLDFLAGS=-s" lua.exe
+	"AR=$(CC) -g -shared -o" "RANLIB=strip --strip-unneeded" \
+	"MYCFLAGS=-DLUA_BUILD_AS_DLL" "MYLIBS=" "MYLDFLAGS=" lua.exe
 	$(MAKE) "LUAC_T=luac.exe" luac.exe
 
 posix:
