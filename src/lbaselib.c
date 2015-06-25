@@ -23,6 +23,13 @@
 
 
 /*
+** print (···)
+**
+** Receives any number of arguments, and prints their values to stdout, using 
+** the tostring function to convert them to strings. print is not intended for 
+** formatted output, but only as a quick way to show a value, typically for 
+** debugging. For formatted output, use string.format.
+**
 ** If your system does not support `stdout', you can just remove this function.
 ** If you need, you can define your own `print' function, following this
 ** model but changing `fputs' to put the strings at a proper place
@@ -49,7 +56,49 @@ static int luaB_print (lua_State *L) {
   return 0;
 }
 
-
+/*
+** tonumber (e [, base])
+**
+** Tries to convert its argument to a number. If the argument is already a 
+** number or a string convertible to a number, then tonumber returns this
+** number; otherwise, it returns nil.
+** An optional argument specifies the base to interpret the numeral. The base 
+** may be any integer between 2 and 36, inclusive. In bases above 10, the letter
+** 'A' (in either upper or lower case) represents 10, 'B' represents 11, and so 
+** forth, with 'Z' representing 35. In base 10 (the default), the number can 
+** have a decimal part, as well as an optional exponent part (see §2.1). In 
+** other bases, only unsigned integers are accepted.
+**
+**
+** unsigned long int strtoul(const char *nptr, char **endptr, int base);
+** 
+** The  strtoul() function converts the initial part of the string in nptr
+** to an unsigned long int value according to the given base,  which  must
+** be between 2 and 36 inclusive, or be the special value 0.
+** The string may begin with an arbitrary amount of white space (as deter‐
+** mined by isspace(3)) followed by a single optional '+' or '-' sign.  If
+** base  is zero or 16, the string may then include a "0x" prefix, and the
+** number will be read in base 16; otherwise, a zero base is taken  as  10
+** (decimal)  unless  the next character is '0', in which case it is taken
+** as 8 (octal).
+** The remainder of the string is converted to an unsigned long int  value
+** in  the  obvious manner, stopping at the first character which is not a
+** valid digit in the given base.  (In bases above 10, the letter  'A'  in
+** either  upper  or  lower  case represents 10, 'B' represents 11, and so
+** forth, with 'Z' representing 35.)
+** If endptr is not NULL,  strtoul()  stores  the  address  of  the  first
+** invalid  character  in  *endptr.   If there were no digits at all, str‐
+** toul() stores the original value of nptr in *endptr  (and  returns  0).
+** In particular, if *nptr is not '\0' but **endptr is '\0' on return, the
+** entire string is valid.
+** The strtoull() function works just  like  the  strtoul()  function  but
+** returns an unsigned long long int value.
+**
+**
+** strtoul expects nptr to point to a string of the following form:
+** [whitespace] [{+ | –}] [0 [{ x | X }]] [digits]
+**
+*/
 static int luaB_tonumber (lua_State *L) {
   int base = luaL_optint(L, 2, 10);
   if (base == 10) {  /* standard conversion */
@@ -77,7 +126,18 @@ static int luaB_tonumber (lua_State *L) {
   return 1;
 }
 
-
+/*
+** error (message [, level])
+**
+** Terminates the last protected function called and returns message as the 
+** error message. Function error never returns.
+** Usually, error adds some information about the error position at the 
+** beginning of the message. The level argument specifies how to get the error 
+** position. With level 1 (the default), the error position is where the error 
+** function was called. Level 2 points the error to where the function that 
+** called error was called; and so on. Passing a level 0 avoids the addition of 
+** error position information to the message.
+*/
 static int luaB_error (lua_State *L) {
   int level = luaL_optint(L, 2, 1);
   lua_settop(L, 1);
@@ -89,7 +149,13 @@ static int luaB_error (lua_State *L) {
   return lua_error(L);
 }
 
-
+/*
+** getmetatable (object)
+**
+** If object does not have a metatable, returns nil. Otherwise, if the object's 
+** metatable has a "__metatable" field, returns the associated value. Otherwise,
+** returns the metatable of the given object.
+*/
 static int luaB_getmetatable (lua_State *L) {
   luaL_checkany(L, 1);
   if (!lua_getmetatable(L, 1)) {
@@ -100,7 +166,15 @@ static int luaB_getmetatable (lua_State *L) {
   return 1;  /* returns either __metatable field (if present) or metatable */
 }
 
-
+/*
+** setmetatable (table, metatable)
+**
+** Sets the metatable for the given table. (You cannot change the metatable of 
+** other types from Lua, only from C.) If metatable is nil, removes the 
+** metatable of the given table. If the original metatable has a "__metatable" 
+** field, raises an error.
+** This function returns table.
+*/
 static int luaB_setmetatable (lua_State *L) {
   int t = lua_type(L, 2);
   luaL_checktype(L, 1, LUA_TTABLE);
@@ -129,7 +203,14 @@ static void getfunc (lua_State *L, int opt) {
   }
 }
 
-
+/*
+** getfenv ([f])
+**
+** Returns the current environment in use by the function. f can be a Lua 
+** function or a number that specifies the function at that stack level: Level 1
+** is the function calling getfenv. If the given function is not a Lua function,
+** or if f is 0, getfenv returns the global environment. The default for f is 1.
+*/
 static int luaB_getfenv (lua_State *L) {
   getfunc(L, 1);
   if (lua_iscfunction(L, -1))  /* is a C function? */
@@ -139,7 +220,16 @@ static int luaB_getfenv (lua_State *L) {
   return 1;
 }
 
-
+/*
+** setfenv (f, table)
+**
+** Sets the environment to be used by the given function. f can be a Lua 
+** function or a number that specifies the function at that stack level: Level 1
+** is the function calling setfenv. setfenv returns the given function.
+**
+** As a special case, when f is 0 setfenv changes the environment of the running
+** thread. In this case, setfenv returns no values.
+*/
 static int luaB_setfenv (lua_State *L) {
   luaL_checktype(L, 2, LUA_TTABLE);
   getfunc(L, 0);
@@ -157,7 +247,12 @@ static int luaB_setfenv (lua_State *L) {
   return 1;
 }
 
-
+/*
+** rawequal (v1, v2)
+**
+** Checks whether v1 is equal to v2, without invoking any metamethod. Returns a 
+** boolean.
+*/
 static int luaB_rawequal (lua_State *L) {
   luaL_checkany(L, 1);
   luaL_checkany(L, 2);
@@ -165,7 +260,12 @@ static int luaB_rawequal (lua_State *L) {
   return 1;
 }
 
-
+/*
+** rawget (table, index)
+** 
+** Gets the real value of table[index], without invoking any metamethod. table 
+** must be a table; index may be any value.
+*/
 static int luaB_rawget (lua_State *L) {
   luaL_checktype(L, 1, LUA_TTABLE);
   luaL_checkany(L, 2);
@@ -174,6 +274,14 @@ static int luaB_rawget (lua_State *L) {
   return 1;
 }
 
+/*
+** rawset (table, index, value)
+**
+** Sets the real value of table[index] to value, without invoking any 
+** metamethod. table must be a table, index any value different from nil, and 
+** value any Lua value.
+** This function returns table.
+*/
 static int luaB_rawset (lua_State *L) {
   luaL_checktype(L, 1, LUA_TTABLE);
   luaL_checkany(L, 2);
@@ -183,13 +291,38 @@ static int luaB_rawset (lua_State *L) {
   return 1;
 }
 
-
+/*
+** gcinfo()
+**
+** Returns two results: the number of Kbytes of dynamic memory that Lua is using
+** and the current garbage collector threshold (also in Kbytes).
+** Function gcinfo is deprecated; use collectgarbage("count") instead.
+*/
 static int luaB_gcinfo (lua_State *L) {
   lua_pushinteger(L, lua_getgccount(L));
   return 1;
 }
 
-
+/*
+** collectgarbage ([opt [, arg]])
+**
+** This function is a generic interface to the garbage collector. It performs
+** different functions according to its first argument, opt:
+**
+** (*) "collect": performs a full garbage-collection cycle. This is the default
+**     option.
+** (*) "stop": stops the garbage collector.
+** (*) "restart": restarts the garbage collector.
+** (*) "count": returns the total memory in use by Lua (in Kbytes).
+** (*) "step": performs a garbage-collection step. The step "size" is controlled 
+**     by arg (larger values mean more steps) in a non-specified way. If you 
+**     want to control the step size you must experimentally tune the value of 
+**     arg. Returns true if the step finished a collection cycle.
+** (*) "setpause": sets arg as the new value for the pause of the collector 
+**     (see §2.10). Returns the previous value for pause.
+** (*) "setstepmul": sets arg as the new value for the step multiplier of the 
+**     collector (see §2.10). Returns the previous value for step.
+*/
 static int luaB_collectgarbage (lua_State *L) {
   static const char *const opts[] = {"stop", "restart", "collect",
     "count", "step", "setpause", "setstepmul", NULL};
@@ -215,14 +348,38 @@ static int luaB_collectgarbage (lua_State *L) {
   }
 }
 
-
+/*
+** type (v)
+**
+** Returns the type of its only argument, coded as a string. The possible 
+** results of this function are "nil" (a string, not the value nil), "number", 
+** "string", "boolean", "table", "function", "thread", and "userdata".
+*/
 static int luaB_type (lua_State *L) {
   luaL_checkany(L, 1);
   lua_pushstring(L, luaL_typename(L, 1));
   return 1;
 }
 
-
+/*
+** next (table [, index])
+** 
+** Allows a program to traverse all fields of a table. Its first argument is a 
+** table and its second argument is an index in this table. next returns the 
+** next index of the table and its associated value. When called with nil as its
+** second argument, next returns an initial index and its associated value. When
+** called with the last index, or with nil in an empty table, next returns nil. 
+** If the second argument is absent, then it is interpreted as nil. In 
+** particular, you can use next(t) to check whether a table is empty.
+**
+** The order in which the indices are enumerated is not specified, even for 
+** numeric indices. (To traverse a table in numeric order, use a numerical for 
+** or the ipairs function.)
+**
+** The behavior of next is undefined if, during the traversal, you assign any 
+** value to a non-existent field in the table. You may however modify existing 
+** fields. In particular, you may clear existing fields.
+*/
 static int luaB_next (lua_State *L) {
   luaL_checktype(L, 1, LUA_TTABLE);
   lua_settop(L, 2);  /* create a 2nd argument if there isn't one */
@@ -234,7 +391,18 @@ static int luaB_next (lua_State *L) {
   }
 }
 
-
+/*
+** pairs (t)
+**
+** Returns three values: the next function, the table t, and nil, so that the 
+** construction
+**
+**      for k,v in pairs(t) do body end
+**
+** will iterate over all key–value pairs of table t.
+**
+** See function next for the caveats of modifying the table during its traversal.
+*/
 static int luaB_pairs (lua_State *L) {
   luaL_checktype(L, 1, LUA_TTABLE);
   lua_pushvalue(L, lua_upvalueindex(1));  /* return generator, */
@@ -253,7 +421,17 @@ static int ipairsaux (lua_State *L) {
   return (lua_isnil(L, -1)) ? 0 : 2;
 }
 
-
+/*
+** ipairs (t)
+**
+** Returns three values: an iterator function, the table t, and 0, so that the 
+** construction
+**
+**      for i,v in ipairs(t) do body end
+**
+** will iterate over the pairs (1,t[1]), (2,t[2]), ···, up to the first integer 
+** key absent from the table.
+*/
 static int luaB_ipairs (lua_State *L) {
   luaL_checktype(L, 1, LUA_TTABLE);
   lua_pushvalue(L, lua_upvalueindex(1));  /* return generator, */
@@ -273,7 +451,17 @@ static int load_aux (lua_State *L, int status) {
   }
 }
 
-
+/*
+** loadstring (string [, chunkname])
+**
+** Similar to load, but gets the chunk from the given string.
+**
+** To load and run a given string, use the idiom
+**
+**      assert(loadstring(s))()
+**
+** When absent, chunkname defaults to the given string.
+*/
 static int luaB_loadstring (lua_State *L) {
   size_t l;
   const char *s = luaL_checklstring(L, 1, &l);
@@ -281,7 +469,12 @@ static int luaB_loadstring (lua_State *L) {
   return load_aux(L, luaL_loadbuffer(L, s, l, chunkname));
 }
 
-
+/*
+** loadfile ([filename])
+**
+** Similar to load, but gets the chunk from file filename or from the standard 
+** input, if no file name is given.
+*/
 static int luaB_loadfile (lua_State *L) {
   const char *fname = luaL_optstring(L, 1, NULL);
   return load_aux(L, luaL_loadfile(L, fname));
@@ -311,7 +504,20 @@ static const char *generic_reader (lua_State *L, void *ud, size_t *size) {
   return NULL;  /* to avoid warnings */
 }
 
-
+/*
+** load (func [, chunkname])
+**
+** Loads a chunk using function func to get its pieces. Each call to func must 
+** return a string that concatenates with previous results. A return of an empty
+** string, nil, or no value signals the end of the chunk.
+**
+** If there are no errors, returns the compiled chunk as a function; otherwise, 
+** returns nil plus the error message. The environment of the returned function 
+** is the global environment.
+**
+** chunkname is used as the chunk name for error messages and debug information.
+** When absent, it defaults to "=(load)".
+*/
 static int luaB_load (lua_State *L) {
   int status;
   const char *cname = luaL_optstring(L, 2, "=(load)");
@@ -321,7 +527,15 @@ static int luaB_load (lua_State *L) {
   return load_aux(L, status);
 }
 
-
+/*
+** dofile ([filename])
+** 
+** Opens the named file and executes its contents as a Lua chunk. When called 
+** without arguments, dofile executes the contents of the standard input 
+** (stdin). Returns all values returned by the chunk. In case of errors, dofile
+** propagates the error to its caller (that is, dofile does not run in protected
+** mode).
+*/
 static int luaB_dofile (lua_State *L) {
   const char *fname = luaL_optstring(L, 1, NULL);
   int n = lua_gettop(L);
@@ -330,7 +544,13 @@ static int luaB_dofile (lua_State *L) {
   return lua_gettop(L) - n;
 }
 
-
+/*
+** assert (v [, message])
+**
+** Issues an error when the value of its argument v is false (i.e., nil or 
+** false); otherwise, returns all its arguments. message is an error message; 
+** when absent, it defaults to "assertion failed!"
+*/
 static int luaB_assert (lua_State *L) {
   luaL_checkany(L, 1);
   if (!lua_toboolean(L, 1))
@@ -338,7 +558,17 @@ static int luaB_assert (lua_State *L) {
   return lua_gettop(L);
 }
 
-
+/*
+** unpack (list [, i [, j]])
+**
+** Returns the elements from the given table. This function is equivalent to
+**
+**      return list[i], list[i+1], ···, list[j]
+** 
+** except that the above code can be written only for a fixed number of 
+** elements. By default, i is 1 and j is the length of the list, as defined by 
+** the length operator (see §2.5.5).
+*/
 static int luaB_unpack (lua_State *L) {
   int i, e, n;
   luaL_checktype(L, 1, LUA_TTABLE);
@@ -354,7 +584,13 @@ static int luaB_unpack (lua_State *L) {
   return n;
 }
 
-
+/*
+** select (index, ···)
+**
+** If index is a number, returns all arguments after argument number index. 
+** Otherwise, index must be the string "#", and select returns the total number 
+** of extra arguments it received.
+*/
 static int luaB_select (lua_State *L) {
   int n = lua_gettop(L);
   if (lua_type(L, 1) == LUA_TSTRING && *lua_tostring(L, 1) == '#') {
@@ -370,7 +606,16 @@ static int luaB_select (lua_State *L) {
   }
 }
 
-
+/*
+** pcall (f, arg1, ···)
+**
+** Calls function f with the given arguments in protected mode. This means that 
+** any error inside f is not propagated; instead, pcall catches the error and 
+** returns a status code. Its first result is the status code (a boolean), which
+** is true if the call succeeds without errors. In such case, pcall also returns
+** all results from the call, after this first result. In case of any error, 
+** pcall returns false plus the error message.
+*/
 static int luaB_pcall (lua_State *L) {
   int status;
   luaL_checkany(L, 1);
@@ -380,7 +625,20 @@ static int luaB_pcall (lua_State *L) {
   return lua_gettop(L);  /* return status + all results */
 }
 
-
+/*
+** xpcall (f, err)
+**
+** This function is similar to pcall, except that you can set a new error 
+** handler.
+**
+** xpcall calls function f in protected mode, using err as the error handler.
+** Any error inside f is not propagated; instead, xpcall catches the error, 
+** calls the err function with the original error object, and returns a status 
+** code. Its first result is the status code (a boolean), which is true if the 
+** call succeeds without errors. In this case, xpcall also returns all results 
+** from the call, after this first result. In case of any error, xpcall returns 
+** false plus the result from err.
+*/
 static int luaB_xpcall (lua_State *L) {
   int status;
   luaL_checkany(L, 2);
@@ -392,7 +650,16 @@ static int luaB_xpcall (lua_State *L) {
   return lua_gettop(L);  /* return status + all results */
 }
 
-
+/*
+** tostring (e)
+**
+** Receives an argument of any type and converts it to a string in a reasonable 
+** format. For complete control of how numbers are converted, use string.format.
+**
+** If the metatable of e has a "__tostring" field, then tostring calls the 
+** corresponding value with e as argument, and uses the result of the call as 
+** its result.
+*/
 static int luaB_tostring (lua_State *L) {
   luaL_checkany(L, 1);
   if (luaL_callmeta(L, 1, "__tostring"))  /* is there a metafield? */
@@ -506,7 +773,16 @@ static int costatus (lua_State *L, lua_State *co) {
   }
 }
 
-
+/*
+** coroutine.status (co)
+** 
+** Returns the status of coroutine co, as a string: "running", if the coroutine 
+** is running (that is, it called status); "suspended", if the coroutine is 
+** suspended in a call to yield, or if it has not started running yet; "normal" 
+** if the coroutine is active but not running (that is, it has resumed another
+** coroutine); and "dead" if the coroutine has finished its body function, or if
+** it has stopped with an error.
+*/
 static int luaB_costatus (lua_State *L) {
   lua_State *co = lua_tothread(L, 1);
   luaL_argcheck(L, co, 1, "coroutine expected");
@@ -539,7 +815,18 @@ static int auxresume (lua_State *L, lua_State *co, int narg) {
   }
 }
 
-
+/*
+** coroutine.resume (co [, val1, ···])
+** 
+** Starts or continues the execution of coroutine co. The first time you resume 
+** a coroutine, it starts running its body. The values val1, ··· are passed as 
+** the arguments to the body function. If the coroutine has yielded, resume 
+** restarts it; the values val1, ··· are passed as the results from the yield.
+** If the coroutine runs without any errors, resume returns true plus any values
+** passed to yield (if the coroutine yields) or any values returned by the body 
+** function (if the coroutine terminates). If there is any error, resume returns
+** false plus the error message.
+*/
 static int luaB_coresume (lua_State *L) {
   lua_State *co = lua_tothread(L, 1);
   int r;
@@ -572,7 +859,12 @@ static int luaB_auxwrap (lua_State *L) {
   return r;
 }
 
-
+/*
+** coroutine.create (f)
+** 
+** Creates a new coroutine, with body f. f must be a Lua function. Returns this 
+** new coroutine, an object with type "thread".
+*/
 static int luaB_cocreate (lua_State *L) {
   lua_State *NL = lua_newthread(L);
   luaL_argcheck(L, lua_isfunction(L, 1) && !lua_iscfunction(L, 1), 1,
@@ -582,19 +874,37 @@ static int luaB_cocreate (lua_State *L) {
   return 1;
 }
 
-
+/*
+** coroutine.wrap (f)
+** 
+** Creates a new coroutine, with body f. f must be a Lua function. Returns a
+** function that resumes the coroutine each time it is called. Any arguments
+** passed to the function behave as the extra arguments to resume. Returns the
+** same values returned by resume, except the first boolean. In case of error, 
+** propagates the error.
+*/
 static int luaB_cowrap (lua_State *L) {
   luaB_cocreate(L);
   lua_pushcclosure(L, luaB_auxwrap, 1);
   return 1;
 }
 
-
+/*
+** coroutine.yield (···)
+** 
+** Suspends the execution of the calling coroutine. The coroutine cannot be 
+** running a C function, a metamethod, or an iterator. Any arguments to yield 
+** are passed as extra results to resume.
+*/
 static int luaB_yield (lua_State *L) {
   return lua_yield(L, lua_gettop(L));
 }
 
-
+/*
+** coroutine.running ()
+** 
+** Returns the running coroutine, or nil when called by the main thread.
+*/
 static int luaB_corunning (lua_State *L) {
   if (lua_pushthread(L))
     lua_pushnil(L);  /* main thread is not a coroutine */

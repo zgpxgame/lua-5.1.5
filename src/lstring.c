@@ -25,9 +25,11 @@ void luaS_resize (lua_State *L, int newsize) {
   int i;
   if (G(L)->gcstate == GCSsweepstring)
     return;  /* cannot resize during GC traverse */
+  /* 分配新空间，并初始化所有hash结点为null */
   newhash = luaM_newvector(L, newsize, GCObject *);
   tb = &G(L)->strt;
   for (i=0; i<newsize; i++) newhash[i] = NULL;
+  /* 把原来所有的元素重新哈希一遍，存入新的字符串表 */
   /* rehash */
   for (i=0; i<tb->size; i++) {
     GCObject *p = tb->hash[i];
@@ -53,6 +55,7 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
   stringtable *tb;
   if (l+1 > (MAX_SIZET - sizeof(TString))/sizeof(char))
     luaM_toobig(L);
+  /* 构造新的字符串 */
   ts = cast(TString *, luaM_malloc(L, (l+1)*sizeof(char)+sizeof(TString)));
   ts->tsv.len = l;
   ts->tsv.hash = h;
@@ -61,11 +64,13 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
   ts->tsv.reserved = 0;
   memcpy(ts+1, str, l*sizeof(char));
   ((char *)(ts+1))[l] = '\0';  /* ending 0 */
+  /* 链接到hash值所在的结点 */
   tb = &G(L)->strt;
   h = lmod(h, tb->size);
   ts->tsv.next = tb->hash[h];  /* chain new entry */
   tb->hash[h] = obj2gco(ts);
   tb->nuse++;
+  /* 空间用完了，再增长2倍 */
   if (tb->nuse > cast(lu_int32, tb->size) && tb->size <= MAX_INT/2)
     luaS_resize(L, tb->size*2);  /* too crowded */
   return ts;
@@ -77,8 +82,10 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
   unsigned int h = cast(unsigned int, l);  /* seed */
   size_t step = (l>>5)+1;  /* if string is too long, don't hash all its chars */
   size_t l1;
+  /* 计算hash值 */
   for (l1=l; l1>=step; l1-=step)  /* compute hash */
     h = h ^ ((h<<5)+(h>>2)+cast(unsigned char, str[l1-1]));
+  /* 查找字符串的hash表中是否已存在同样的字符串 */
   for (o = G(L)->strt.hash[lmod(h, G(L)->strt.size)];
        o != NULL;
        o = o->gch.next) {
@@ -89,6 +96,7 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
       return ts;
     }
   }
+  /* 新建一个字符串 */
   return newlstr(L, str, l, h);  /* not found */
 }
 
