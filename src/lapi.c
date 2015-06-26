@@ -960,7 +960,13 @@ LUA_API int lua_gc (lua_State *L, int what, int data) {
 ** miscellaneous functions
 */
 
-
+/*
+** Generates a Lua error. The error message (which can actually be a Lua value 
+** of any type) must be on the stack top. This function does a long jump, and 
+** therefore never returns. (see luaL_error).
+**
+** [-1, +0, v]
+*/
 LUA_API int lua_error (lua_State *L) {
   lua_lock(L);
   api_checknelems(L, 1);
@@ -969,7 +975,28 @@ LUA_API int lua_error (lua_State *L) {
   return 0;  /* to avoid warnings */
 }
 
-
+/*
+** Pops a key from the stack, and pushes a key-value pair from the table at the 
+** given index (the "next" pair after the given key). If there are no more 
+** elements in the table, then lua_next returns 0 (and pushes nothing).
+**
+** A typical traversal looks like this:
+**
+**   // table is in the stack at index 't'
+**   lua_pushnil(L);  // first key
+**   while (lua_next(L, t) != 0) {
+**     // uses 'key' (at index -2) and 'value' (at index -1)
+**     printf("%s - %s\n",
+**            lua_typename(L, lua_type(L, -2)),
+**            lua_typename(L, lua_type(L, -1)));
+**     // removes 'value'; keeps 'key' for next iteration
+**     lua_pop(L, 1);
+**   }
+**
+** While traversing a table, do not call lua_tolstring directly on a key, unless
+** you know that the key is actually a string. Recall that lua_tolstring changes
+** the value at the given index; this confuses the next call to lua_next.
+*/
 LUA_API int lua_next (lua_State *L, int idx) {
   StkId t;
   int more;
@@ -986,7 +1013,15 @@ LUA_API int lua_next (lua_State *L, int idx) {
   return more;
 }
 
-
+/*
+** Concatenates the n values at the top of the stack, pops them, and leaves the 
+** result at the top. If n is 1, the result is the single value on the stack 
+** (that is, the function does nothing); if n is 0, the result is the empty 
+** string. Concatenation is performed following the usual semantics of Lua 
+** (see §2.5.4).
+**
+** [-n, +1, e]
+*/
 LUA_API void lua_concat (lua_State *L, int n) {
   lua_lock(L);
   api_checknelems(L, n);

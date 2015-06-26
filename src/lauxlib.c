@@ -69,7 +69,20 @@ static void tag_error (lua_State *L, int narg, int tag) {
   luaL_typerror(L, narg, lua_typename(L, tag));
 }
 
-
+/*
+** Pushes onto the stack a string identifying the current position of the 
+** control at level lvl in the call stack. Typically this string has the 
+** following format:
+**
+**     chunkname:currentline:
+**
+** Level 0 is the running function, level 1 is the function that called the 
+** running function, etc.
+**
+** This function is used to build a prefix for error messages.
+**
+** [-0, +1, m]
+*/
 LUALIB_API void luaL_where (lua_State *L, int level) {
   lua_Debug ar;
   if (lua_getstack(L, level, &ar)) {  /* check function at level */
