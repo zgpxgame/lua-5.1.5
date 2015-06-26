@@ -996,6 +996,8 @@ LUA_API int lua_error (lua_State *L) {
 ** While traversing a table, do not call lua_tolstring directly on a key, unless
 ** you know that the key is actually a string. Recall that lua_tolstring changes
 ** the value at the given index; this confuses the next call to lua_next.
+**
+** [-1, +(2|0), e]
 */
 LUA_API int lua_next (lua_State *L, int idx) {
   StkId t;
