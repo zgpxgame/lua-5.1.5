@@ -374,6 +374,51 @@ typedef union Closure {
 
 /*
 ** Tables
+**
+** http://lua-users.org/lists/lua-l/2008-06/msg00298.html
+**
+** |typedef union TKey {
+** |  struct {
+** |    TValuefields;
+** |    struct Node *next;
+** |  } nk;
+** |  TValue tvk;
+** |} TKey;
+** |
+** |
+** |Why TKey has a member 'tvk'?
+** |
+**
+** It allows TKey to be efficiently stored.
+** 
+** See, on Windows this'll print "16 bytes".
+**  struct {
+**    double n;
+**    int tt;
+**    void *next;
+**  } temp;
+**  printf("%d bytes", temp);
+** 
+** Whereas this will print "24 bytes":
+**  struct {
+**    struct { double n; int tt; } tvalue;
+**    void *next;
+**  } temp;
+** Because sizeof(temp.tvalue) = 16 (as doubles need to be 8 byte aligned),
+** making the temp structure be layed out in memory like this:
+**  Double (0..7 bytes)
+**  Tag (8..11 bytes)
+**  <tvalue alignment padding> (9..16 bytes)
+**  Node *next (17..20 bytes)
+**  <temp alignment padding> (17..20 bytes)
+** 
+** So Lua effectively declares this:
+**  union {
+**    struct { double n; int tt; void *next; } nk;
+**    TValue tvk;
+**  } temp;
+** nk is the first way, tvk allows accessing nk like a TValue.
+** 
 */
 
 typedef union TKey {
