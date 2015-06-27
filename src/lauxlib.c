@@ -40,6 +40,17 @@
 */
 
 
+/*
+** Raises an error with the following message, where func is retrieved from the
+** call stack:
+**
+**     bad argument #<narg> to <func> (<extramsg>)
+**
+** This function never returns, but it is an idiom to use it in C functions as
+** return luaL_argerror(args).
+** 
+** [-0, +0, v]
+*/
 LUALIB_API int luaL_argerror (lua_State *L, int narg, const char *extramsg) {
   lua_Debug ar;
   if (!lua_getstack(L, 0, &ar))  /* no stack frame? */
@@ -58,6 +69,16 @@ LUALIB_API int luaL_argerror (lua_State *L, int narg, const char *extramsg) {
 }
 
 
+/*
+** Generates an error with a message like the following:
+**
+**     location: bad argument narg to 'func' (tname expected, got rt)
+**
+** where location is produced by luaL_where, func is the name of the current
+** function, and rt is the type name of the actual argument.
+** 
+** [-0, +0, v]
+*/
 LUALIB_API int luaL_typerror (lua_State *L, int narg, const char *tname) {
   const char *msg = lua_pushfstring(L, "%s expected, got %s",
                                     tname, luaL_typename(L, narg));
@@ -96,6 +117,17 @@ LUALIB_API void luaL_where (lua_State *L, int level) {
 }
 
 
+/*
+** Raises an error. The error message format is given by fmt plus any extra
+** arguments, following the same rules of lua_pushfstring. It also adds at the
+** beginning of the message the file name and the line number where the error
+** occurred, if this information is available.
+**
+** This function never returns, but it is an idiom to use it in C functions as
+** return luaL_error(args).
+**
+** [-0, +0, v]
+*/
 LUALIB_API int luaL_error (lua_State *L, const char *fmt, ...) {
   va_list argp;
   va_start(argp, fmt);
@@ -109,6 +141,21 @@ LUALIB_API int luaL_error (lua_State *L, const char *fmt, ...) {
 /* }====================================================== */
 
 
+/*
+** Checks whether the function argument narg is a string and searches for this
+** string in the array lst (which must be NULL-terminated). Returns the index in
+** the array where the string was found. Raises an error if the argument is not
+** a string or if the string cannot be found.
+**
+** If def is not NULL, the function uses def as a default value when there is no
+** argument narg or if this argument is nil.
+**
+** This is a useful function for mapping strings to C enums. (The usual
+** convention in Lua libraries is to use strings instead of numbers to select
+** options.)
+**
+** [-0, +0, v]
+*/
 LUALIB_API int luaL_checkoption (lua_State *L, int narg, const char *def,
                                  const char *const lst[]) {
   const char *name = (def) ? luaL_optstring(L, narg, def) :
@@ -122,6 +169,16 @@ LUALIB_API int luaL_checkoption (lua_State *L, int narg, const char *def,
 }
 
 
+/*
+** If the registry already has the key tname, returns 0. Otherwise, creates a
+** new table to be used as a metatable for userdata, adds it to the registry
+** with key tname, and returns 1.
+**
+** In both cases pushes onto the stack the final value associated with tname in
+** the registry.
+**
+** [-0, +1, m]
+*/
 LUALIB_API int luaL_newmetatable (lua_State *L, const char *tname) {
   lua_getfield(L, LUA_REGISTRYINDEX, tname);  /* get registry.name */
   if (!lua_isnil(L, -1))  /* name already in use? */
@@ -134,6 +191,12 @@ LUALIB_API int luaL_newmetatable (lua_State *L, const char *tname) {
 }
 
 
+/*
+** Checks whether the function argument narg is a userdata of the type tname
+** (see luaL_newmetatable).
+**
+** [-0, +0, v]
+*/
 LUALIB_API void *luaL_checkudata (lua_State *L, int ud, const char *tname) {
   void *p = lua_touserdata(L, ud);
   if (p != NULL) {  /* value is a userdata? */
@@ -150,24 +213,52 @@ LUALIB_API void *luaL_checkudata (lua_State *L, int ud, const char *tname) {
 }
 
 
+/*
+** Grows the stack size to top + sz elements, raising an error if the stack
+** cannot grow to that size. msg is an additional text to go into the error
+** message.
+**
+** [-0, +0, v]
+*/
 LUALIB_API void luaL_checkstack (lua_State *L, int space, const char *mes) {
   if (!lua_checkstack(L, space))
     luaL_error(L, "stack overflow (%s)", mes);
 }
 
 
+/*
+** Checks whether the function argument narg has type t. See lua_type for the
+** encoding of types for t.
+**
+** [-0, +0, v]
+*/
 LUALIB_API void luaL_checktype (lua_State *L, int narg, int t) {
   if (lua_type(L, narg) != t)
     tag_error(L, narg, t);
 }
 
 
+/*
+** Checks whether the function has an argument of any type (including nil) at
+** position narg.
+**
+** [-0, +0, v]
+*/
 LUALIB_API void luaL_checkany (lua_State *L, int narg) {
   if (lua_type(L, narg) == LUA_TNONE)
     luaL_argerror(L, narg, "value expected");
 }
 
 
+/*
+** Checks whether the function argument narg is a string and returns this
+** string; if l is not NULL fills *l with the string's length.
+**
+** This function uses lua_tolstring to get its result, so all conversions and
+** caveats of that function apply here.
+**
+** [-0, +0, v]
+*/
 LUALIB_API const char *luaL_checklstring (lua_State *L, int narg, size_t *len) {
   const char *s = lua_tolstring(L, narg, len);
   if (!s) tag_error(L, narg, LUA_TSTRING);
@@ -175,6 +266,14 @@ LUALIB_API const char *luaL_checklstring (lua_State *L, int narg, size_t *len) {
 }
 
 
+/*
+** If the function argument narg is a string, returns this string. If this
+** argument is absent or is nil, returns d. Otherwise, raises an error.
+**
+** If l is not NULL, fills the position *l with the results's length.
+**
+** [-0, +0, v]
+*/
 LUALIB_API const char *luaL_optlstring (lua_State *L, int narg,
                                         const char *def, size_t *len) {
   if (lua_isnoneornil(L, narg)) {
@@ -186,6 +285,12 @@ LUALIB_API const char *luaL_optlstring (lua_State *L, int narg,
 }
 
 
+/*
+** Checks whether the function argument narg is a number and returns this
+** number.
+**
+** [-0, +0, v]
+*/
 LUALIB_API lua_Number luaL_checknumber (lua_State *L, int narg) {
   lua_Number d = lua_tonumber(L, narg);
   if (d == 0 && !lua_isnumber(L, narg))  /* avoid extra test when d is not 0 */
@@ -194,11 +299,23 @@ LUALIB_API lua_Number luaL_checknumber (lua_State *L, int narg) {
 }
 
 
+/*
+** If the function argument narg is a number, returns this number. If this
+** argument is absent or is nil, returns d. Otherwise, raises an error.
+**
+** [-0, +0, v]
+*/
 LUALIB_API lua_Number luaL_optnumber (lua_State *L, int narg, lua_Number def) {
   return luaL_opt(L, luaL_checknumber, narg, def);
 }
 
 
+/*
+** Checks whether the function argument narg is a number and returns this number
+** cast to a lua_Integer.
+**
+** [-0, +0, v]
+*/
 LUALIB_API lua_Integer luaL_checkinteger (lua_State *L, int narg) {
   lua_Integer d = lua_tointeger(L, narg);
   if (d == 0 && !lua_isnumber(L, narg))  /* avoid extra test when d is not 0 */
@@ -207,12 +324,26 @@ LUALIB_API lua_Integer luaL_checkinteger (lua_State *L, int narg) {
 }
 
 
+/*
+** If the function argument narg is a number, returns this number cast to a
+** lua_Integer. If this argument is absent or is nil, returns d. Otherwise,
+** raises an error.
+**
+** [-0, +0, v]
+*/
 LUALIB_API lua_Integer luaL_optinteger (lua_State *L, int narg,
                                                       lua_Integer def) {
   return luaL_opt(L, luaL_checkinteger, narg, def);
 }
 
 
+/*
+** Pushes onto the stack the field e from the metatable of the object at index
+** obj. If the object does not have a metatable, or if the metatable does not
+** have this field, returns 0 and pushes nothing.
+**
+** [-0, +(0|1), m]
+*/
 LUALIB_API int luaL_getmetafield (lua_State *L, int obj, const char *event) {
   if (!lua_getmetatable(L, obj))  /* no metatable? */
     return 0;
@@ -229,6 +360,17 @@ LUALIB_API int luaL_getmetafield (lua_State *L, int obj, const char *event) {
 }
 
 
+/*
+** Calls a metamethod.
+**
+** If the object at index obj has a metatable and this metatable has a field e,
+** this function calls this field and passes the object as its only argument. In
+** this case this function returns 1 and pushes onto the stack the value
+** returned by the call. If there is no metatable or no metamethod, this
+** function returns 0 (without pushing any value on the stack).
+**
+** [-0, +(0|1), e]
+*/
 LUALIB_API int luaL_callmeta (lua_State *L, int obj, const char *event) {
   obj = abs_index(L, obj);
   if (!luaL_getmetafield(L, obj, event))  /* no metafield? */
@@ -239,6 +381,22 @@ LUALIB_API int luaL_callmeta (lua_State *L, int obj, const char *event) {
 }
 
 
+/*
+** Opens a library.
+** 
+** When called with libname equal to NULL, it simply registers all functions in
+** the list l (see luaL_Reg) into the table on the top of the stack.
+** 
+** When called with a non-null libname, luaL_register creates a new table t,
+** sets it as the value of the global variable libname, sets it as the value of
+** package.loaded[libname], and registers on it all functions in the list l. If
+** there is a table in package.loaded[libname] or in variable libname, reuses
+** this table instead of creating a new one.
+** 
+** In any case the function leaves the table on the top of the stack.
+** 
+** [-(0|1), +1, m]
+*/
 LUALIB_API void (luaL_register) (lua_State *L, const char *libname,
                                 const luaL_Reg *l) {
   luaI_openlib(L, libname, l, 0);
@@ -311,7 +469,11 @@ static void getsizes (lua_State *L) {
   }
 }
 
-
+/*
+** Functions luaL_getn and luaL_setn (from the auxiliary library) are
+** deprecated. Use lua_objlen instead of luaL_getn and nothing instead of
+** luaL_setn.
+*/
 LUALIB_API void luaL_setn (lua_State *L, int t, int n) {
   t = abs_index(L, t);
   lua_pushliteral(L, "n");
@@ -349,7 +511,12 @@ LUALIB_API int luaL_getn (lua_State *L, int t) {
 /* }====================================================== */
 
 
-
+/*
+** Creates a copy of string s by replacing any occurrence of the string p with
+** the string r. Pushes the resulting string on the stack and returns it.
+**
+** [-0, +1, m]
+*/
 LUALIB_API const char *luaL_gsub (lua_State *L, const char *s, const char *p,
                                                                const char *r) {
   const char *wild;
@@ -439,6 +606,14 @@ static void adjuststack (luaL_Buffer *B) {
 }
 
 
+/*
+** Returns an address to a space of size LUAL_BUFFERSIZE where you can copy a
+** string to be added to buffer B (see luaL_Buffer). After copying the string
+** into this space you must call luaL_addsize with the size of the string to
+** actually add it to the buffer.
+**
+** [-0, +0, -]
+*/
 LUALIB_API char *luaL_prepbuffer (luaL_Buffer *B) {
   if (emptybuffer(B))
     adjuststack(B);
@@ -446,17 +621,35 @@ LUALIB_API char *luaL_prepbuffer (luaL_Buffer *B) {
 }
 
 
+/*
+** Adds the string pointed to by s with length l to the buffer B (see
+** luaL_Buffer). The string may contain embedded zeros.
+**
+** [-0, +0, m]
+*/
 LUALIB_API void luaL_addlstring (luaL_Buffer *B, const char *s, size_t l) {
   while (l--)
     luaL_addchar(B, *s++);
 }
 
 
+/*
+** Adds the zero-terminated string pointed to by s to the buffer B (see
+** luaL_Buffer). The string may not contain embedded zeros.
+**
+** [-0, +0, m]
+*/
 LUALIB_API void luaL_addstring (luaL_Buffer *B, const char *s) {
   luaL_addlstring(B, s, strlen(s));
 }
 
 
+/*
+** Finishes the use of buffer B leaving the final string on the top of the
+** stack.
+**
+** [-?, +1, m]
+*/
 LUALIB_API void luaL_pushresult (luaL_Buffer *B) {
   emptybuffer(B);
   lua_concat(B->L, B->lvl);
@@ -464,6 +657,16 @@ LUALIB_API void luaL_pushresult (luaL_Buffer *B) {
 }
 
 
+/*
+** Adds the value at the top of the stack to the buffer B (see luaL_Buffer).
+** Pops the value.
+**
+** This is the only function on string buffers that can (and must) be called
+** with an extra element on the stack, which is the value to be added to the
+** buffer.
+**
+** [-1, +0, m]
+*/
 LUALIB_API void luaL_addvalue (luaL_Buffer *B) {
   lua_State *L = B->L;
   size_t vl;
@@ -482,6 +685,12 @@ LUALIB_API void luaL_addvalue (luaL_Buffer *B) {
 }
 
 
+/*
+** Initializes a buffer B. This function does not allocate any space; the buffer
+** must be declared as a variable (see luaL_Buffer).
+**
+** [-0, +0, -]
+*/
 LUALIB_API void luaL_buffinit (lua_State *L, luaL_Buffer *B) {
   B->L = L;
   B->p = B->buffer;
@@ -491,6 +700,22 @@ LUALIB_API void luaL_buffinit (lua_State *L, luaL_Buffer *B) {
 /* }====================================================== */
 
 
+/*
+** Creates and returns a reference, in the table at index t, for the object at
+** the top of the stack (and pops the object).
+**
+** A reference is a unique integer key. As long as you do not manually add
+** integer keys into table t, luaL_ref ensures the uniqueness of the key it
+** returns. You can retrieve an object referred by reference r by calling
+** lua_rawgeti(L, t, r). Function luaL_unref frees a reference and its
+** associated object.
+**
+** If the object at the top of the stack is nil, luaL_ref returns the constant
+** LUA_REFNIL. The constant LUA_NOREF is guaranteed to be different from any
+** reference returned by luaL_ref.
+**
+** [-1, +0, m]
+*/
 LUALIB_API int luaL_ref (lua_State *L, int t) {
   int ref;
   t = abs_index(L, t);
@@ -514,6 +739,15 @@ LUALIB_API int luaL_ref (lua_State *L, int t) {
 }
 
 
+/*
+** Releases reference ref from the table at index t (see luaL_ref). The entry is
+** removed from the table, so that the referred object can be collected. The
+** reference ref is also freed to be used again.
+**
+** If ref is LUA_NOREF or LUA_REFNIL, luaL_unref does nothing.
+**
+** [-0, +0, -]
+*/
 LUALIB_API void luaL_unref (lua_State *L, int t, int ref) {
   if (ref >= 0) {
     t = abs_index(L, t);
@@ -562,6 +796,18 @@ static int errfile (lua_State *L, const char *what, int fnameindex) {
 }
 
 
+/*
+** Loads a file as a Lua chunk. This function uses lua_load to load the chunk in
+** the file named filename. If filename is NULL, then it loads from the standard
+** input. The first line in the file is ignored if it starts with a #.
+**
+** This function returns the same results as lua_load, but it has an extra error
+** code LUA_ERRFILE if it cannot open/read the file.
+**
+** As lua_load, this function only loads the chunk; it does not run it.
+**
+** [-0, +1, m]
+*/
 LUALIB_API int luaL_loadfile (lua_State *L, const char *filename) {
   LoadF lf;
   int status, readstatus;
@@ -619,6 +865,15 @@ static const char *getS (lua_State *L, void *ud, size_t *size) {
 }
 
 
+/*
+** Loads a buffer as a Lua chunk. This function uses lua_load to load the chunk
+** in the buffer pointed to by buff with size sz.
+**
+** This function returns the same results as lua_load. name is the chunk name,
+** used for debug information and error messages.
+** 
+** [-0, +1, m]
+*/
 LUALIB_API int luaL_loadbuffer (lua_State *L, const char *buff, size_t size,
                                 const char *name) {
   LoadS ls;
@@ -628,6 +883,16 @@ LUALIB_API int luaL_loadbuffer (lua_State *L, const char *buff, size_t size,
 }
 
 
+/*
+** Loads a string as a Lua chunk. This function uses lua_load to load the chunk
+** in the zero-terminated string s.
+**
+** This function returns the same results as lua_load.
+**
+** Also as lua_load, this function only loads the chunk; it does not run it.
+**
+** [-0, +1, m]
+*/
 LUALIB_API int (luaL_loadstring) (lua_State *L, const char *s) {
   return luaL_loadbuffer(L, s, strlen(s), s);
 }
@@ -657,6 +922,16 @@ static int panic (lua_State *L) {
 }
 
 
+/*
+** Creates a new Lua state. It calls lua_newstate with an allocator based on the
+** standard C realloc function and then sets a panic function (see lua_atpanic)
+** that prints an error message to the standard error output in case of fatal
+** errors.
+**
+** Returns the new state, or NULL if there is a memory allocation error.
+** 
+** [-0, +0, -]
+*/
 LUALIB_API lua_State *luaL_newstate (void) {
   lua_State *L = lua_newstate(l_alloc, NULL);
   if (L) lua_atpanic(L, &panic);

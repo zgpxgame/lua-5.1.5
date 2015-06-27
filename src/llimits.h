@@ -53,7 +53,7 @@ typedef LUAI_UACNUMBER l_uacNumber;
 
 /* internal assertions for in-house debugging */
 #ifdef lua_assert
-
+/* 在执行表达式e之前检测条件c是否满足 */
 #define check_exp(c,e)		(lua_assert(c), (e))
 #define api_check(l,e)		lua_assert(e)
 

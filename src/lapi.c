@@ -91,7 +91,14 @@ void luaA_pushobject (lua_State *L, const TValue *o) {
   api_incr_top(L);
 }
 
-
+/*
+** Ensures that there are at least extra free stack slots in the stack. It 
+** returns false if it cannot grow the stack to that size. This function never 
+** shrinks the stack; if the stack is already larger than the new size, it is 
+** left unchanged.
+**
+** [-0, +0, m]
+*/
 LUA_API int lua_checkstack (lua_State *L, int size) {
   int res = 1;
   lua_lock(L);
@@ -107,6 +114,14 @@ LUA_API int lua_checkstack (lua_State *L, int size) {
 }
 
 
+/*
+** Exchange values between different threads of the same global state.
+**
+** This function pops n values from the stack from, and pushes them onto the 
+** stack to.
+** 
+** [-?, +?, -]
+*/
 LUA_API void lua_xmove (lua_State *from, lua_State *to, int n) {
   int i;
   if (from == to) return;
@@ -127,6 +142,18 @@ LUA_API void lua_setlevel (lua_State *from, lua_State *to) {
 }
 
 
+/*
+** Sets a new panic function and returns the old one.
+**
+** If an error happens outside any protected environment, Lua calls a panic 
+** function and then calls exit(EXIT_FAILURE), thus exiting the host 
+** application. Your panic function can avoid this exit by never returning 
+** (e.g., doing a long jump).
+**
+** The panic function can access the error message at the top of the stack.
+**
+** [-0, +0, -]
+*/
 LUA_API lua_CFunction lua_atpanic (lua_State *L, lua_CFunction panicf) {
   lua_CFunction old;
   lua_lock(L);
@@ -137,6 +164,17 @@ LUA_API lua_CFunction lua_atpanic (lua_State *L, lua_CFunction panicf) {
 }
 
 
+/*
+** Creates a new thread, pushes it on the stack, and returns a pointer to a 
+** lua_State that represents this new thread. The new state returned by this 
+** function shares with the original state all global objects (such as tables), 
+** but has an independent execution stack.
+**
+** There is no explicit function to close or to destroy a thread. Threads are 
+** subject to garbage collection, like any Lua object.
+**
+** [-0, +1, m]
+*/
 LUA_API lua_State *lua_newthread (lua_State *L) {
   lua_State *L1;
   lua_lock(L);
@@ -156,11 +194,25 @@ LUA_API lua_State *lua_newthread (lua_State *L) {
 */
 
 
+/*
+** Returns the index of the top element in the stack. Because indices start at
+** 1, this result is equal to the number of elements in the stack (and so 0 
+** means an empty stack).
+**
+** [-0, +0, -]
+*/
 LUA_API int lua_gettop (lua_State *L) {
   return cast_int(L->top - L->base);
 }
 
 
+/*
+** Accepts any acceptable index, or 0, and sets the stack top to this index. If 
+** the new top is larger than the old one, then the new elements are filled with
+** nil. If index is 0, then all stack elements are removed.
+**
+** [-?, +?, -]
+*/
 LUA_API void lua_settop (lua_State *L, int idx) {
   lua_lock(L);
   if (idx >= 0) {
@@ -177,6 +229,13 @@ LUA_API void lua_settop (lua_State *L, int idx) {
 }
 
 
+/*
+** Removes the element at the given valid index, shifting down the elements 
+** above this index to fill the gap. Cannot be called with a pseudo-index, 
+** because a pseudo-index is not an actual stack position.
+** 
+** [-1, +0, -]
+*/
 LUA_API void lua_remove (lua_State *L, int idx) {
   StkId p;
   lua_lock(L);
@@ -188,6 +247,13 @@ LUA_API void lua_remove (lua_State *L, int idx) {
 }
 
 
+/*
+** Moves the top element into the given valid index, shifting up the elements 
+** above this index to open space. Cannot be called with a pseudo-index, because
+** a pseudo-index is not an actual stack position.
+**
+** [-1, +1, -]
+*/
 LUA_API void lua_insert (lua_State *L, int idx) {
   StkId p;
   StkId q;
@@ -200,6 +266,12 @@ LUA_API void lua_insert (lua_State *L, int idx) {
 }
 
 
+/*
+** Moves the top element into the given position (and pops it), without shifting
+** any element (therefore replacing the value at the given position).
+** 
+** [-1, +0, -]
+*/
 LUA_API void lua_replace (lua_State *L, int idx) {
   StkId o;
   lua_lock(L);
@@ -225,6 +297,11 @@ LUA_API void lua_replace (lua_State *L, int idx) {
 }
 
 
+/*
+** Pushes a copy of the element at the given valid index onto the stack.
+**
+** [-0, +1, -]
+*/
 LUA_API void lua_pushvalue (lua_State *L, int idx) {
   lua_lock(L);
   setobj2s(L, L->top, index2adr(L, idx));
@@ -239,24 +316,51 @@ LUA_API void lua_pushvalue (lua_State *L, int idx) {
 */
 
 
+/*
+** Returns the type of the value in the given acceptable index, or LUA_TNONE for
+** a non-valid index (that is, an index to an "empty" stack position). The types
+** returned by lua_type are coded by the following constants defined in lua.h: 
+** LUA_TNIL, LUA_TNUMBER, LUA_TBOOLEAN, LUA_TSTRING, LUA_TTABLE, LUA_TFUNCTION, 
+** LUA_TUSERDATA, LUA_TTHREAD, and LUA_TLIGHTUSERDATA.
+**
+** [-0, +0, -]
+*/
 LUA_API int lua_type (lua_State *L, int idx) {
   StkId o = index2adr(L, idx);
   return (o == luaO_nilobject) ? LUA_TNONE : ttype(o);
 }
 
 
+/*
+** Returns the name of the type encoded by the value tp, which must be one the
+** values returned by lua_type.
+**
+** [-0, +0, -]
+*/
 LUA_API const char *lua_typename (lua_State *L, int t) {
   UNUSED(L);
   return (t == LUA_TNONE) ? "no value" : luaT_typenames[t];
 }
 
 
+/*
+** Returns 1 if the value at the given acceptable index is a C function, and 0 
+** otherwise.
+**
+** [-0, +0, -]
+*/
 LUA_API int lua_iscfunction (lua_State *L, int idx) {
   StkId o = index2adr(L, idx);
   return iscfunction(o);
 }
 
 
+/*
+** Returns 1 if the value at the given acceptable index is a number or a string 
+** convertible to a number, and 0 otherwise.
+**
+** [-0, +0, -]
+*/
 LUA_API int lua_isnumber (lua_State *L, int idx) {
   TValue n;
   const TValue *o = index2adr(L, idx);
@@ -264,18 +368,37 @@ LUA_API int lua_isnumber (lua_State *L, int idx) {
 }
 
 
+/*
+** Returns 1 if the value at the given acceptable index is a string or a number 
+** (which is always convertible to a string), and 0 otherwise.
+**
+** [-0, +0, -]
+*/
 LUA_API int lua_isstring (lua_State *L, int idx) {
   int t = lua_type(L, idx);
   return (t == LUA_TSTRING || t == LUA_TNUMBER);
 }
 
 
+/*
+** Returns 1 if the value at the given acceptable index is a userdata (either 
+** full or light), and 0 otherwise.
+**
+** [-0, +0, -]
+*/
 LUA_API int lua_isuserdata (lua_State *L, int idx) {
   const TValue *o = index2adr(L, idx);
   return (ttisuserdata(o) || ttislightuserdata(o));
 }
 
 
+/*
+** Returns 1 if the two values in acceptable indices index1 and index2 are 
+** primitively equal (that is, without calling metamethods). Otherwise returns 
+** 0. Also returns 0 if any of the indices are non valid.
+** 
+** [-0, +0, -]
+*/
 LUA_API int lua_rawequal (lua_State *L, int index1, int index2) {
   StkId o1 = index2adr(L, index1);
   StkId o2 = index2adr(L, index2);
@@ -284,6 +407,14 @@ LUA_API int lua_rawequal (lua_State *L, int index1, int index2) {
 }
 
 
+/*
+** Returns 1 if the two values in acceptable indices index1 and index2 are 
+** equal, following the semantics of the Lua == operator (that is, may call 
+** metamethods). Otherwise returns 0. Also returns 0 if any of the indices is 
+** non valid.
+**
+** [-0, +0, e]
+*/
 LUA_API int lua_equal (lua_State *L, int index1, int index2) {
   StkId o1, o2;
   int i;
@@ -296,6 +427,14 @@ LUA_API int lua_equal (lua_State *L, int index1, int index2) {
 }
 
 
+/*
+** Returns 1 if the value at acceptable index index1 is smaller than the value 
+** at acceptable index index2, following the semantics of the Lua < operator 
+** (that is, may call metamethods). Otherwise returns 0. Also returns 0 if any 
+** of the indices is non valid.
+**
+** [-0, +0, e]
+*/
 LUA_API int lua_lessthan (lua_State *L, int index1, int index2) {
   StkId o1, o2;
   int i;
@@ -309,7 +448,13 @@ LUA_API int lua_lessthan (lua_State *L, int index1, int index2) {
 }
 
 
-
+/*
+** Converts the Lua value at the given acceptable index to the C type lua_Number
+** (see lua_Number). The Lua value must be a number or a string convertible to a
+** number (see §2.2.1); otherwise, lua_tonumber returns 0.
+**
+** [-0, +0, -]
+*/
 LUA_API lua_Number lua_tonumber (lua_State *L, int idx) {
   TValue n;
   const TValue *o = index2adr(L, idx);
@@ -320,6 +465,15 @@ LUA_API lua_Number lua_tonumber (lua_State *L, int idx) {
 }
 
 
+/*
+** Converts the Lua value at the given acceptable index to the signed integral 
+** type lua_Integer. The Lua value must be a number or a string convertible to a
+** number (see §2.2.1); otherwise, lua_tointeger returns 0.
+**
+** If the number is not an integer, it is truncated in some non-specified way.
+**
+** [-0, +0, -]
+*/
 LUA_API lua_Integer lua_tointeger (lua_State *L, int idx) {
   TValue n;
   const TValue *o = index2adr(L, idx);
@@ -334,12 +488,37 @@ LUA_API lua_Integer lua_tointeger (lua_State *L, int idx) {
 }
 
 
+/*
+** Converts the Lua value at the given acceptable index to a C boolean value 
+** (0 or 1). Like all tests in Lua, lua_toboolean returns 1 for any Lua value 
+** different from false and nil; otherwise it returns 0. It also returns 0 when 
+** called with a non-valid index. (If you want to accept only actual boolean 
+** values, use lua_isboolean to test the value's type.)
+**
+** [-0, +0, -]
+*/
 LUA_API int lua_toboolean (lua_State *L, int idx) {
   const TValue *o = index2adr(L, idx);
   return !l_isfalse(o);
 }
 
 
+/*
+** Converts the Lua value at the given acceptable index to a C string. If len is
+** not NULL, it also sets *len with the string length. The Lua value must be a 
+** string or a number; otherwise, the function returns NULL. If the value is a 
+** number, then lua_tolstring also changes the actual value in the stack to a 
+** string. (This change confuses lua_next when lua_tolstring is applied to keys 
+** during a table traversal.)
+**
+** lua_tolstring returns a fully aligned pointer to a string inside the Lua 
+** state. This string always has a zero ('\0') after its last character 
+** (as in C), but can contain other zeros in its body. Because Lua has garbage 
+** collection, there is no guarantee that the pointer returned by lua_tolstring 
+** will be valid after the corresponding value is removed from the stack.
+**
+** [-0, +0, m]
+*/
 LUA_API const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
   StkId o = index2adr(L, idx);
   if (!ttisstring(o)) {
@@ -358,6 +537,14 @@ LUA_API const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
 }
 
 
+/*
+** Returns the "length" of the value at the given acceptable index: for strings,
+** this is the string length; for tables, this is the result of the length 
+** operator ('#'); for userdata, this is the size of the block of memory 
+** allocated for the userdata; for other values, it is 0.
+**
+** [-0, +0, -]
+*/
 LUA_API size_t lua_objlen (lua_State *L, int idx) {
   StkId o = index2adr(L, idx);
   switch (ttype(o)) {
@@ -376,12 +563,25 @@ LUA_API size_t lua_objlen (lua_State *L, int idx) {
 }
 
 
+/*
+** Converts a value at the given acceptable index to a C function. That value
+** must be a C function; otherwise, returns NULL.
+**
+** [-0, +0, -]
+*/
 LUA_API lua_CFunction lua_tocfunction (lua_State *L, int idx) {
   StkId o = index2adr(L, idx);
   return (!iscfunction(o)) ? NULL : clvalue(o)->c.f;
 }
 
 
+/*
+** If the value at the given acceptable index is a full userdata, returns its
+** block address. If the value is a light userdata, returns its pointer.
+** Otherwise, returns NULL.
+**
+** [-0, +0, -]
+*/
 LUA_API void *lua_touserdata (lua_State *L, int idx) {
   StkId o = index2adr(L, idx);
   switch (ttype(o)) {
@@ -392,12 +592,29 @@ LUA_API void *lua_touserdata (lua_State *L, int idx) {
 }
 
 
+/*
+** Converts the value at the given acceptable index to a Lua thread (represented
+** as lua_State*). This value must be a thread; otherwise, the function returns 
+** NULL.
+**
+** [-0, +0, -]
+*/
 LUA_API lua_State *lua_tothread (lua_State *L, int idx) {
   StkId o = index2adr(L, idx);
   return (!ttisthread(o)) ? NULL : thvalue(o);
 }
 
 
+/*
+** Converts the value at the given acceptable index to a generic C pointer 
+** (void*). The value can be a userdata, a table, a thread, or a function; 
+** otherwise, lua_topointer returns NULL. Different objects will give different 
+** pointers. There is no way to convert the pointer back to its original value.
+**
+** Typically this function is used only for debug information.
+**
+** [-0, +0, -]
+*/
 LUA_API const void *lua_topointer (lua_State *L, int idx) {
   StkId o = index2adr(L, idx);
   switch (ttype(o)) {
@@ -418,6 +635,11 @@ LUA_API const void *lua_topointer (lua_State *L, int idx) {
 */
 
 
+/*
+** Pushes a nil value onto the stack.
+**
+** [-0, +1, -]
+*/
 LUA_API void lua_pushnil (lua_State *L) {
   lua_lock(L);
   setnilvalue(L->top);
@@ -426,6 +648,11 @@ LUA_API void lua_pushnil (lua_State *L) {
 }
 
 
+/*
+** Pushes a number with value n onto the stack.
+**
+** [-0, +1, -]
+*/
 LUA_API void lua_pushnumber (lua_State *L, lua_Number n) {
   lua_lock(L);
   setnvalue(L->top, n);
@@ -434,6 +661,11 @@ LUA_API void lua_pushnumber (lua_State *L, lua_Number n) {
 }
 
 
+/*
+** Pushes a number with value n onto the stack.
+**
+** [-0, +1, -]
+*/
 LUA_API void lua_pushinteger (lua_State *L, lua_Integer n) {
   lua_lock(L);
   setnvalue(L->top, cast_num(n));
@@ -442,6 +674,14 @@ LUA_API void lua_pushinteger (lua_State *L, lua_Integer n) {
 }
 
 
+/*
+** Pushes the string pointed to by s with size len onto the stack. Lua makes (or
+** reuses) an internal copy of the given string, so the memory at s can be freed
+** or reused immediately after the function returns. The string can contain
+** embedded zeros.
+**
+** [-0, +1, m]
+*/
 LUA_API void lua_pushlstring (lua_State *L, const char *s, size_t len) {
   lua_lock(L);
   luaC_checkGC(L);
@@ -451,6 +691,14 @@ LUA_API void lua_pushlstring (lua_State *L, const char *s, size_t len) {
 }
 
 
+/*
+** Pushes the zero-terminated string pointed to by s onto the stack. Lua makes 
+** (or reuses) an internal copy of the given string, so the memory at s can be
+** freed or reused immediately after the function returns. The string cannot
+** contain embedded zeros; it is assumed to end at the first zero.
+**
+** [-0, +1, m]
+*/
 LUA_API void lua_pushstring (lua_State *L, const char *s) {
   if (s == NULL)
     lua_pushnil(L);
@@ -459,6 +707,12 @@ LUA_API void lua_pushstring (lua_State *L, const char *s) {
 }
 
 
+/*
+** Equivalent to lua_pushfstring, except that it receives a va_list instead of a
+** variable number of arguments.
+**
+** [-0, +1, m]
+*/
 LUA_API const char *lua_pushvfstring (lua_State *L, const char *fmt,
                                       va_list argp) {
   const char *ret;
@@ -470,6 +724,23 @@ LUA_API const char *lua_pushvfstring (lua_State *L, const char *fmt,
 }
 
 
+/*
+** Pushes onto the stack a formatted string and returns a pointer to this
+** string. It is similar to the C function sprintf, but has some important
+** differences:
+**
+** (*) You do not have to allocate space for the result: the result is a Lua
+**     string and Lua takes care of memory allocation (and deallocation, through
+**     garbage collection).
+** (*) The conversion specifiers are quite restricted. There are no flags,
+**     widths, or precisions. The conversion specifiers can only be '%%'
+**     (inserts a '%' in the string), '%s' (inserts a zero-terminated string,
+**     with no size restrictions), '%f' (inserts a lua_Number), '%p' (inserts a
+**     pointer as a hexadecimal numeral), '%d' (inserts an int), and '%c'
+**     (inserts an int as a character).
+**
+** [-0, +1, m]
+*/
 LUA_API const char *lua_pushfstring (lua_State *L, const char *fmt, ...) {
   const char *ret;
   va_list argp;
@@ -483,6 +754,22 @@ LUA_API const char *lua_pushfstring (lua_State *L, const char *fmt, ...) {
 }
 
 
+/*
+** Pushes a new C closure onto the stack.
+**
+** When a C function is created, it is possible to associate some values with
+** it, thus creating a C closure (see §3.4); these values are then accessible to
+** the function whenever it is called. To associate values with a C function,
+** first these values should be pushed onto the stack (when there are multiple
+** values, the first value is pushed first). Then lua_pushcclosure is called to
+** create and push the C function onto the stack, with the argument n telling
+** how many values should be associated with the function. lua_pushcclosure also
+** pops these values from the stack.
+**
+** The maximum value for n is 255.
+** 
+** [-n, +1, m]
+*/
 LUA_API void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
   Closure *cl;
   lua_lock(L);
@@ -500,6 +787,11 @@ LUA_API void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
 }
 
 
+/*
+** Pushes a boolean value with value b onto the stack.
+** 
+** [-0, +1, -]
+*/
 LUA_API void lua_pushboolean (lua_State *L, int b) {
   lua_lock(L);
   setbvalue(L->top, (b != 0));  /* ensure that true is 1 */
@@ -508,6 +800,16 @@ LUA_API void lua_pushboolean (lua_State *L, int b) {
 }
 
 
+/*
+** Pushes a light userdata onto the stack.
+**
+** Userdata represent C values in Lua. A light userdata represents a pointer. It
+** is a value (like a number): you do not create it, it has no individual
+** metatable, and it is not collected (as it was never created). A light
+** userdata is equal to "any" light userdata with the same C address.
+**
+** [-0, +1, -]
+*/
 LUA_API void lua_pushlightuserdata (lua_State *L, void *p) {
   lua_lock(L);
   setpvalue(L->top, p);
@@ -516,6 +818,12 @@ LUA_API void lua_pushlightuserdata (lua_State *L, void *p) {
 }
 
 
+/*
+** Pushes the thread represented by L onto the stack. Returns 1 if this thread
+** is the main thread of its state.
+**
+** [-0, +1, -]
+*/
 LUA_API int lua_pushthread (lua_State *L) {
   lua_lock(L);
   setthvalue(L, L->top, L);
@@ -531,6 +839,16 @@ LUA_API int lua_pushthread (lua_State *L) {
 */
 
 
+/*
+** Pushes onto the stack the value t[k], where t is the value at the given valid
+** index and k is the value at the top of the stack.
+**
+** This function pops the key from the stack (putting the resulting value in its
+** place). As in Lua, this function may trigger a metamethod for the "index"
+** event (see §2.8).
+**
+** [-1, +1, e]
+*/
 LUA_API void lua_gettable (lua_State *L, int idx) {
   StkId t;
   lua_lock(L);
@@ -541,6 +859,13 @@ LUA_API void lua_gettable (lua_State *L, int idx) {
 }
 
 
+/*
+** Pushes onto the stack the value t[k], where t is the value at the given valid
+** index. As in Lua, this function may trigger a metamethod for the "index"
+** event (see §2.8).
+**
+** [-0, +1, e]
+*/
 LUA_API void lua_getfield (lua_State *L, int idx, const char *k) {
   StkId t;
   TValue key;
@@ -554,6 +879,11 @@ LUA_API void lua_getfield (lua_State *L, int idx, const char *k) {
 }
 
 
+/*
+** Similar to lua_gettable, but does a raw access (i.e., without metamethods).
+**
+** [-1, +1, -]
+*/
 LUA_API void lua_rawget (lua_State *L, int idx) {
   StkId t;
   lua_lock(L);
@@ -564,6 +894,12 @@ LUA_API void lua_rawget (lua_State *L, int idx) {
 }
 
 
+/*
+** Pushes onto the stack the value t[n], where t is the value at the given valid
+** index. The access is raw; that is, it does not invoke metamethods.
+**
+** [-0, +1, -]
+*/
 LUA_API void lua_rawgeti (lua_State *L, int idx, int n) {
   StkId o;
   lua_lock(L);
@@ -575,6 +911,14 @@ LUA_API void lua_rawgeti (lua_State *L, int idx, int n) {
 }
 
 
+/*
+** Creates a new empty table and pushes it onto the stack. The new table has
+** space pre-allocated for narr array elements and nrec non-array elements. This
+** pre-allocation is useful when you know exactly how many elements the table
+** will have. Otherwise you can use the function lua_newtable.
+**
+** [-0, +1, m]
+*/
 LUA_API void lua_createtable (lua_State *L, int narray, int nrec) {
   lua_lock(L);
   luaC_checkGC(L);
@@ -584,6 +928,13 @@ LUA_API void lua_createtable (lua_State *L, int narray, int nrec) {
 }
 
 
+/*
+** Pushes onto the stack the metatable of the value at the given acceptable
+** index. If the index is not valid, or if the value does not have a metatable,
+** the function returns 0 and pushes nothing on the stack.
+**
+** [-0, +(0|1), -]
+*/
 LUA_API int lua_getmetatable (lua_State *L, int objindex) {
   const TValue *obj;
   Table *mt = NULL;
@@ -613,6 +964,11 @@ LUA_API int lua_getmetatable (lua_State *L, int objindex) {
 }
 
 
+/*
+** Pushes onto the stack the environment table of the value at the given index.
+**
+** [-0, +1, -]
+*/
 LUA_API void lua_getfenv (lua_State *L, int idx) {
   StkId o;
   lua_lock(L);
@@ -642,6 +998,16 @@ LUA_API void lua_getfenv (lua_State *L, int idx) {
 */
 
 
+/*
+** Does the equivalent to t[k] = v, where t is the value at the given valid
+** index, v is the value at the top of the stack, and k is the value just below
+** the top.
+**
+** This function pops both the key and the value from the stack. As in Lua, this
+** function may trigger a metamethod for the "newindex" event (see §2.8).
+**
+** [-2, +0, e]
+*/
 LUA_API void lua_settable (lua_State *L, int idx) {
   StkId t;
   lua_lock(L);
@@ -654,6 +1020,15 @@ LUA_API void lua_settable (lua_State *L, int idx) {
 }
 
 
+/*
+** Does the equivalent to t[k] = v, where t is the value at the given valid
+** index and v is the value at the top of the stack.
+**
+** This function pops the value from the stack. As in Lua, this function may
+** trigger a metamethod for the "newindex" event (see §2.8).
+**
+** [-1, +0, e]
+*/
 LUA_API void lua_setfield (lua_State *L, int idx, const char *k) {
   StkId t;
   TValue key;
@@ -668,6 +1043,12 @@ LUA_API void lua_setfield (lua_State *L, int idx, const char *k) {
 }
 
 
+/*
+** Similar to lua_settable, but does a raw assignment (i.e., without 
+** metamethods).
+**
+** [-2, +0, m]
+*/
 LUA_API void lua_rawset (lua_State *L, int idx) {
   StkId t;
   lua_lock(L);
@@ -681,6 +1062,15 @@ LUA_API void lua_rawset (lua_State *L, int idx) {
 }
 
 
+/*
+** Does the equivalent of t[n] = v, where t is the value at the given valid
+** index and v is the value at the top of the stack.
+**
+** This function pops the value from the stack. The assignment is raw; that is,
+** it does not invoke metamethods.
+** 
+** [-1, +0, m]
+*/
 LUA_API void lua_rawseti (lua_State *L, int idx, int n) {
   StkId o;
   lua_lock(L);
@@ -694,6 +1084,12 @@ LUA_API void lua_rawseti (lua_State *L, int idx, int n) {
 }
 
 
+/*
+** Pops a table from the stack and sets it as the new metatable for the value at
+** the given acceptable index.
+**
+** [-1, +0, -]
+*/
 LUA_API int lua_setmetatable (lua_State *L, int objindex) {
   TValue *obj;
   Table *mt;
@@ -731,6 +1127,13 @@ LUA_API int lua_setmetatable (lua_State *L, int objindex) {
 }
 
 
+/*
+** Pops a table from the stack and sets it as the new environment for the value
+** at the given index. If the value at the given index is neither a function nor
+** a thread nor a userdata, lua_setfenv returns 0. Otherwise it returns 1.
+**
+** [-1, +0, -]
+*/
 LUA_API int lua_setfenv (lua_State *L, int idx) {
   StkId o;
   int res = 1;
@@ -773,6 +1176,45 @@ LUA_API int lua_setfenv (lua_State *L, int idx) {
      api_check(L, (nr) == LUA_MULTRET || (L->ci->top - L->top >= (nr) - (na)))
 	
 
+/*
+** Calls a function.
+**
+** To call a function you must use the following protocol: first, the function
+** to be called is pushed onto the stack; then, the arguments to the function
+** are pushed in direct order; that is, the first argument is pushed first.
+** Finally you call lua_call; nargs is the number of arguments that you pushed
+** onto the stack. All arguments and the function value are popped from the
+** stack when the function is called. The function results are pushed onto the
+** stack when the function returns. The number of results is adjusted to
+** nresults, unless nresults is LUA_MULTRET. In this case, all results from the
+** function are pushed. Lua takes care that the returned values fit into the
+** stack space. The function results are pushed onto the stack in direct order
+** (the first result is pushed first), so that after the call the last result is
+** on the top of the stack.
+**
+** Any error inside the called function is propagated upwards (with a longjmp).
+** 
+** The following example shows how the host program can do the equivalent to
+**  this Lua code:
+**
+**     a = f("how", t.x, 14)
+**
+** Here it is in C:
+**
+**     lua_getfield(L, LUA_GLOBALSINDEX, "f"); // function to be called
+**     lua_pushstring(L, "how");                        // 1st argument
+**     lua_getfield(L, LUA_GLOBALSINDEX, "t");   // table to be indexed
+**     lua_getfield(L, -1, "x");        // push result of t.x (2nd arg)
+**     lua_remove(L, -2);                  // remove 't' from the stack
+**     lua_pushinteger(L, 14);                          // 3rd argument
+**     lua_call(L, 3, 1);     /* call 'f' with 3 arguments and 1 result
+**     lua_setfield(L, LUA_GLOBALSINDEX, "a");        // set global 'a'
+**
+** Note that the code above is "balanced": at its end, the stack is back to its
+** original configuration. This is considered good programming practice.
+**
+** [-(nargs + 1), +nresults, e]
+*/
 LUA_API void lua_call (lua_State *L, int nargs, int nresults) {
   StkId func;
   lua_lock(L);
@@ -801,7 +1243,36 @@ static void f_call (lua_State *L, void *ud) {
 }
 
 
-
+/*
+** Calls a function in protected mode.
+**
+** Both nargs and nresults have the same meaning as in lua_call. If there are no
+** errors during the call, lua_pcall behaves exactly like lua_call. However, if
+** there is any error, lua_pcall catches it, pushes a single value on the stack
+** (the error message), and returns an error code. Like lua_call, lua_pcall
+** always removes the function and its arguments from the stack.
+**
+** If errfunc is 0, then the error message returned on the stack is exactly the
+** original error message. Otherwise, errfunc is the stack index of an error
+** handler function. (In the current implementation, this index cannot be a
+** pseudo-index.) In case of runtime errors, this function will be called with
+** the error message and its return value will be the message returned on the
+** stack by lua_pcall.
+**
+** Typically, the error handler function is used to add more debug information
+** to the error message, such as a stack traceback. Such information cannot be
+** gathered after the return of lua_pcall, since by then the stack has unwound.
+**
+** The lua_pcall function returns 0 in case of success or one of the following
+** error codes (defined in lua.h):
+**
+** (*) LUA_ERRRUN: a runtime error.
+** (*) LUA_ERRMEM: memory allocation error. For such errors, Lua does not call
+**     the error handler function.
+** (*) LUA_ERRERR: error while running the error handler function.
+**
+** [-(nargs + 1), +(nresults|1), -]
+*/
 LUA_API int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc) {
   struct CallS c;
   int status;
@@ -847,6 +1318,15 @@ static void f_Ccall (lua_State *L, void *ud) {
 }
 
 
+/*
+** Calls the C function func in protected mode. func starts with only one
+** element in its stack, a light userdata containing ud. In case of errors,
+** lua_cpcall returns the same error codes as lua_pcall, plus the error object
+** on the top of the stack; otherwise, it returns zero, and does not change the
+** stack. All values returned by func are discarded.
+**
+** [-0, +(0|1), -]
+*/
 LUA_API int lua_cpcall (lua_State *L, lua_CFunction func, void *ud) {
   struct CCallS c;
   int status;
@@ -859,6 +1339,29 @@ LUA_API int lua_cpcall (lua_State *L, lua_CFunction func, void *ud) {
 }
 
 
+/*
+** Loads a Lua chunk. If there are no errors, lua_load pushes the compiled chunk
+** as a Lua function on top of the stack. Otherwise, it pushes an error message.
+** The return values of lua_load are:
+**
+** (*) 0: no errors;
+** (*) LUA_ERRSYNTAX: syntax error during pre-compilation;
+** (*) LUA_ERRMEM: memory allocation error.
+**
+** This function only loads a chunk; it does not run it.
+**
+** lua_load automatically detects whether the chunk is text or binary, and loads
+** it accordingly (see program luac).
+**
+** The lua_load function uses a user-supplied reader function to read the chunk
+** (see lua_Reader). The data argument is an opaque value passed to the reader
+** function.
+**
+** The chunkname argument gives a name to the chunk, which is used for error
+** messages and in debug information (see §3.8).
+**
+** [-0, +1, -]
+*/
 LUA_API int lua_load (lua_State *L, lua_Reader reader, void *data,
                       const char *chunkname) {
   ZIO z;
@@ -872,6 +1375,20 @@ LUA_API int lua_load (lua_State *L, lua_Reader reader, void *data,
 }
 
 
+/*
+** Dumps a function as a binary chunk. Receives a Lua function on the top of the
+** stack and produces a binary chunk that, if loaded again, results in a
+** function equivalent to the one dumped. As it produces parts of the chunk,
+** lua_dump calls function writer (see lua_Writer) with the given data to write
+** them.
+**
+** The value returned is the error code returned by the last call to the writer;
+** 0 means no errors.
+**
+** This function does not pop the Lua function from the stack.
+**
+** [-0, +0, m]
+*/
 LUA_API int lua_dump (lua_State *L, lua_Writer writer, void *data) {
   int status;
   TValue *o;
@@ -887,6 +1404,14 @@ LUA_API int lua_dump (lua_State *L, lua_Writer writer, void *data) {
 }
 
 
+/*
+** Returns the status of the thread L.
+**
+** The status can be 0 for a normal thread, an error code if the thread finished
+** its execution with an error, or LUA_YIELD if the thread is suspended.
+**
+** [-0, +0, -]
+*/
 LUA_API int  lua_status (lua_State *L) {
   return L->status;
 }
@@ -894,8 +1419,32 @@ LUA_API int  lua_status (lua_State *L) {
 
 /*
 ** Garbage-collection function
+**
+** Controls the garbage collector.
+**
+** This function performs several tasks, according to the value of the parameter
+** what:
+**
+** (*) LUA_GCSTOP: stops the garbage collector.
+** (*) LUA_GCRESTART: restarts the garbage collector.
+** (*) LUA_GCCOLLECT: performs a full garbage-collection cycle.
+** (*) LUA_GCCOUNT: returns the current amount of memory (in Kbytes) in use by
+**     Lua.
+** (*) LUA_GCCOUNTB: returns the remainder of dividing the current amount of
+**     bytes of memory in use by Lua by 1024.
+** (*) LUA_GCSTEP: performs an incremental step of garbage collection. The step
+**     "size" is controlled by data (larger values mean more steps) in a
+**     non-specified way. If you want to control the step size you must
+**     experimentally tune the value of data. The function returns 1 if the step
+**     finished a garbage-collection cycle.
+** (*) LUA_GCSETPAUSE: sets data as the new value for the pause of the collector
+**     (see §2.10). The function returns the previous value of the pause.
+** (*) LUA_GCSETSTEPMUL: sets data as the new value for the step multiplier of
+**     the collector (see §2.10). The function returns the previous value of the
+**     step multiplier.
+**
+** [-0, +0, e]
 */
-
 LUA_API int lua_gc (lua_State *L, int what, int data) {
   int res = 0;
   global_State *g;
@@ -1041,6 +1590,12 @@ LUA_API void lua_concat (lua_State *L, int n) {
 }
 
 
+/*
+** Returns the memory-allocation function of a given state. If ud is not NULL,
+** Lua stores in *ud the opaque pointer passed to lua_newstate.
+**
+** [-0, +0, -]
+*/
 LUA_API lua_Alloc lua_getallocf (lua_State *L, void **ud) {
   lua_Alloc f;
   lua_lock(L);
@@ -1051,6 +1606,11 @@ LUA_API lua_Alloc lua_getallocf (lua_State *L, void **ud) {
 }
 
 
+/*
+** Changes the allocator function of a given state to f with user data ud.
+**
+** [-0, +0, -]
+*/
 LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud) {
   lua_lock(L);
   G(L)->ud = ud;
@@ -1059,6 +1619,22 @@ LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud) {
 }
 
 
+/*
+** This function allocates a new block of memory with the given size, pushes
+** onto the stack a new full userdata with the block address, and returns this
+** address.
+**
+** Userdata represent C values in Lua. A full userdata represents a block of
+** memory. It is an object (like a table): you must create it, it can have its
+** own metatable, and you can detect when it is being collected. A full userdata
+** is only equal to itself (under raw equality).
+**
+** When Lua collects a full userdata with a gc metamethod, Lua calls the
+** metamethod and marks the userdata as finalized. When this userdata is
+** collected again then Lua frees its corresponding memory.
+** 
+** [-0, +1, m]
+*/
 LUA_API void *lua_newuserdata (lua_State *L, size_t size) {
   Udata *u;
   lua_lock(L);
@@ -1091,6 +1667,21 @@ static const char *aux_upvalue (StkId fi, int n, TValue **val) {
 }
 
 
+/*
+** Gets information about a closure's upvalue. (For Lua functions, upvalues are
+** the external local variables that the function uses, and that are
+** consequently included in its closure.) lua_getupvalue gets the index n of an
+** upvalue, pushes the upvalue's value onto the stack, and returns its name.
+** funcindex points to the closure in the stack. (Upvalues have no particular
+** order, as they are active through the whole function. So, they are numbered
+** in an arbitrary order.)
+**
+** Returns NULL (and pushes nothing) when the index is greater than the number
+** of upvalues. For C functions, this function uses the empty string "" as a
+** name for all upvalues.
+**
+** [-0, +(0|1), -]
+*/
 LUA_API const char *lua_getupvalue (lua_State *L, int funcindex, int n) {
   const char *name;
   TValue *val;
@@ -1105,6 +1696,17 @@ LUA_API const char *lua_getupvalue (lua_State *L, int funcindex, int n) {
 }
 
 
+/*
+** Sets the value of a closure's upvalue. It assigns the value at the top of the
+** stack to the upvalue and returns its name. It also pops the value from the
+** stack. Parameters funcindex and n are as in the lua_getupvalue (see
+** lua_getupvalue).
+**
+** Returns NULL (and pops nothing) when the index is greater than the number of
+** upvalues.
+**
+** [-(0|1), +0, -]
+*/
 LUA_API const char *lua_setupvalue (lua_State *L, int funcindex, int n) {
   const char *name;
   TValue *val;

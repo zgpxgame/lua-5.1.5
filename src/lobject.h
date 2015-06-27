@@ -68,6 +68,19 @@ typedef union {
 
 /*
 ** Tagged Values
+** 
+** TValue +tt
+**        +Value +p
+**               +n
+**               +b
+**               +GCObject +TString
+**                         +Udata
+**                         +Proto
+**                         +UpVal
+**                         +CClosure
+**                         +LClosure
+**                         +Table
+**                         +lua_State
 */
 
 #define TValuefields	Value value; int tt
