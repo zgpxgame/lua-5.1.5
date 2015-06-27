@@ -12,23 +12,32 @@
 #include "lstate.h"
 #include "lzio.h"
 
-
+/* 在栈中增加n个元素的空间 */
 #define luaD_checkstack(L,n)	\
   if ((char *)L->stack_last - (char *)L->top <= (n)*(int)sizeof(TValue)) \
     luaD_growstack(L, n); \
   else condhardstacktests(luaD_reallocstack(L, L->stacksize - EXTRA_STACK - 1));
 
-
+/* 栈指针上移。栈空间不足时，增加1个栈空间 */
 #define incr_top(L) {luaD_checkstack(L,1); L->top++;}
 
+/* 
+** 保存p在栈空间的偏移量，在某些操作之后，栈空间的内存可能会重新分配，之后根据偏
+** 移，用宏restorestack重新取得新的元素地址
+*/
 #define savestack(L,p)		((char *)(p) - (char *)L->stack)
+/* 恢复栈元素地址，即取出栈底偏移到n的地址 */
 #define restorestack(L,n)	((TValue *)((char *)L->stack + (n)))
-
+/* 保存偏移量 */
 #define saveci(L,p)		((char *)(p) - (char *)L->base_ci)
+/* 取得偏移量n的地址 */
 #define restoreci(L,n)		((CallInfo *)((char *)L->base_ci + (n)))
 
 
-/* results from luaD_precall */
+/*
+** results from luaD_precall
+** "PCR" means "pre call result"
+*/
 #define PCRLUA		0	/* initiated a call to a Lua function */
 #define PCRC		1	/* did a call to a C function */
 #define PCRYIELD	2	/* C funtion yielded */
