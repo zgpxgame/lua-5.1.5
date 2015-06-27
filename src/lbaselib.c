@@ -56,6 +56,7 @@ static int luaB_print (lua_State *L) {
   return 0;
 }
 
+
 /*
 ** tonumber (e [, base])
 **
@@ -126,6 +127,7 @@ static int luaB_tonumber (lua_State *L) {
   return 1;
 }
 
+
 /*
 ** error (message [, level])
 **
@@ -149,6 +151,7 @@ static int luaB_error (lua_State *L) {
   return lua_error(L);
 }
 
+
 /*
 ** getmetatable (object)
 **
@@ -165,6 +168,7 @@ static int luaB_getmetatable (lua_State *L) {
   luaL_getmetafield(L, 1, "__metatable");
   return 1;  /* returns either __metatable field (if present) or metatable */
 }
+
 
 /*
 ** setmetatable (table, metatable)
@@ -203,6 +207,7 @@ static void getfunc (lua_State *L, int opt) {
   }
 }
 
+
 /*
 ** getfenv ([f])
 **
@@ -219,6 +224,7 @@ static int luaB_getfenv (lua_State *L) {
     lua_getfenv(L, -1);
   return 1;
 }
+
 
 /*
 ** setfenv (f, table)
@@ -247,6 +253,7 @@ static int luaB_setfenv (lua_State *L) {
   return 1;
 }
 
+
 /*
 ** rawequal (v1, v2)
 **
@@ -259,6 +266,7 @@ static int luaB_rawequal (lua_State *L) {
   lua_pushboolean(L, lua_rawequal(L, 1, 2));
   return 1;
 }
+
 
 /*
 ** rawget (table, index)
@@ -273,6 +281,7 @@ static int luaB_rawget (lua_State *L) {
   lua_rawget(L, 1);
   return 1;
 }
+
 
 /*
 ** rawset (table, index, value)
@@ -291,6 +300,7 @@ static int luaB_rawset (lua_State *L) {
   return 1;
 }
 
+
 /*
 ** gcinfo()
 **
@@ -302,6 +312,7 @@ static int luaB_gcinfo (lua_State *L) {
   lua_pushinteger(L, lua_getgccount(L));
   return 1;
 }
+
 
 /*
 ** collectgarbage ([opt [, arg]])
@@ -348,6 +359,7 @@ static int luaB_collectgarbage (lua_State *L) {
   }
 }
 
+
 /*
 ** type (v)
 **
@@ -360,6 +372,7 @@ static int luaB_type (lua_State *L) {
   lua_pushstring(L, luaL_typename(L, 1));
   return 1;
 }
+
 
 /*
 ** next (table [, index])
@@ -391,6 +404,7 @@ static int luaB_next (lua_State *L) {
   }
 }
 
+
 /*
 ** pairs (t)
 **
@@ -420,6 +434,7 @@ static int ipairsaux (lua_State *L) {
   lua_rawgeti(L, 1, i);
   return (lua_isnil(L, -1)) ? 0 : 2;
 }
+
 
 /*
 ** ipairs (t)
@@ -451,6 +466,7 @@ static int load_aux (lua_State *L, int status) {
   }
 }
 
+
 /*
 ** loadstring (string [, chunkname])
 **
@@ -468,6 +484,7 @@ static int luaB_loadstring (lua_State *L) {
   const char *chunkname = luaL_optstring(L, 2, s);
   return load_aux(L, luaL_loadbuffer(L, s, l, chunkname));
 }
+
 
 /*
 ** loadfile ([filename])
@@ -504,6 +521,7 @@ static const char *generic_reader (lua_State *L, void *ud, size_t *size) {
   return NULL;  /* to avoid warnings */
 }
 
+
 /*
 ** load (func [, chunkname])
 **
@@ -527,6 +545,7 @@ static int luaB_load (lua_State *L) {
   return load_aux(L, status);
 }
 
+
 /*
 ** dofile ([filename])
 ** 
@@ -544,6 +563,7 @@ static int luaB_dofile (lua_State *L) {
   return lua_gettop(L) - n;
 }
 
+
 /*
 ** assert (v [, message])
 **
@@ -557,6 +577,7 @@ static int luaB_assert (lua_State *L) {
     return luaL_error(L, "%s", luaL_optstring(L, 2, "assertion failed!"));
   return lua_gettop(L);
 }
+
 
 /*
 ** unpack (list [, i [, j]])
@@ -584,6 +605,7 @@ static int luaB_unpack (lua_State *L) {
   return n;
 }
 
+
 /*
 ** select (index, ···)
 **
@@ -606,6 +628,7 @@ static int luaB_select (lua_State *L) {
   }
 }
 
+
 /*
 ** pcall (f, arg1, ···)
 **
@@ -624,6 +647,7 @@ static int luaB_pcall (lua_State *L) {
   lua_insert(L, 1);
   return lua_gettop(L);  /* return status + all results */
 }
+
 
 /*
 ** xpcall (f, err)
@@ -649,6 +673,7 @@ static int luaB_xpcall (lua_State *L) {
   lua_replace(L, 1);
   return lua_gettop(L);  /* return status + all results */
 }
+
 
 /*
 ** tostring (e)
@@ -773,6 +798,7 @@ static int costatus (lua_State *L, lua_State *co) {
   }
 }
 
+
 /*
 ** coroutine.status (co)
 ** 
@@ -814,6 +840,7 @@ static int auxresume (lua_State *L, lua_State *co, int narg) {
     return -1;  /* error flag */
   }
 }
+
 
 /*
 ** coroutine.resume (co [, val1, ···])
@@ -859,6 +886,7 @@ static int luaB_auxwrap (lua_State *L) {
   return r;
 }
 
+
 /*
 ** coroutine.create (f)
 ** 
@@ -873,6 +901,7 @@ static int luaB_cocreate (lua_State *L) {
   lua_xmove(L, NL, 1);  /* move function from L to NL */
   return 1;
 }
+
 
 /*
 ** coroutine.wrap (f)
@@ -889,6 +918,7 @@ static int luaB_cowrap (lua_State *L) {
   return 1;
 }
 
+
 /*
 ** coroutine.yield (···)
 ** 
@@ -899,6 +929,7 @@ static int luaB_cowrap (lua_State *L) {
 static int luaB_yield (lua_State *L) {
   return lua_yield(L, lua_gettop(L));
 }
+
 
 /*
 ** coroutine.running ()
