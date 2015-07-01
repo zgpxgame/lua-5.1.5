@@ -1,4 +1,4 @@
-/*
+ï»¿/*
 ** $Id: ldo.c,v 2.38.1.4 2012/01/18 02:27:10 roberto Exp $
 ** Stack and Call structure of Lua
 ** See Copyright Notice in lua.h
@@ -123,6 +123,10 @@ int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud) {
 /* }====================================================== */
 
 
+/*
+** åœ¨é‡æ–°åˆ†é…æ ˆå†…å­˜åï¼Œä¿®æ­£ä¸æ ˆç›¸å…³çš„å€¼ï¼ŒåŒ…æ‹¬top, openupval, ci, base
+** newaddr = offset + newstack
+*/
 static void correctstack (lua_State *L, TValue *oldstack) {
   CallInfo *ci;
   GCObject *up;
@@ -210,14 +214,14 @@ static StkId adjust_varargs (lua_State *L, Proto *p, int actual) {
   int nfixargs = p->numparams;
   Table *htab = NULL;
   StkId base, fixed;
-  /* ½«È±Ê§µÄ¹Ì¶¨²ÎÊıµÄÖµÉèÎªnil */
+  /* å°†ç¼ºå¤±çš„å›ºå®šå‚æ•°çš„å€¼è®¾ä¸ºnil */
   for (; actual < nfixargs; ++actual)
     setnilvalue(L->top++);
 #if defined(LUA_COMPAT_VARARG)
   if (p->is_vararg & VARARG_NEEDSARG) { /* compat. with old-style vararg? */
     /*
-	* ¼æÈİ¾ÉÓĞµÄÈ¡¿É±ä²ÎÊıµÄ·½Ê½
-	* arg[1] ÎªµÚÒ»¸ö¿É±ä²ÎÊı arg[N] ÎªµÚN¸ö¿É±ä²ÎÊı arg.n ÊÇ¿É±ä²ÎÊıµÄÊıÁ¿
+	* å…¼å®¹æ—§æœ‰çš„å–å¯å˜å‚æ•°çš„æ–¹å¼
+	* arg[1] ä¸ºç¬¬ä¸€ä¸ªå¯å˜å‚æ•° arg[N] ä¸ºç¬¬Nä¸ªå¯å˜å‚æ•° arg.n æ˜¯å¯å˜å‚æ•°çš„æ•°é‡
 	*/
     int nvar = actual - nfixargs;  /* number of extra arguments */
     lua_assert(p->is_vararg & VARARG_HASARG);
@@ -274,7 +278,7 @@ int luaD_precall (lua_State *L, StkId func, int nresults) {
     func = tryfuncTM(L, func);  /* check the `function' tag method */
   funcr = savestack(L, func);
   cl = &clvalue(func)->l;
-  /* ±£´æÉÏÒ»¸öº¯ÊıµÄÖ¸ÁîÖ¸Õë */
+  /* ä¿å­˜ä¸Šä¸€ä¸ªå‡½æ•°çš„æŒ‡ä»¤æŒ‡é’ˆ */
   L->ci->savedpc = L->savedpc;
   if (!cl->isC) {  /* Lua function? prepare its call */
     CallInfo *ci;
@@ -283,13 +287,13 @@ int luaD_precall (lua_State *L, StkId func, int nresults) {
     luaD_checkstack(L, p->maxstacksize);
     func = restorestack(L, funcr);
 	/*
-	* ½ÓÏÂÀ´×öµÄÊÂÇé£º
-	*   ¸ù¾İº¯Êı¿É±äÊıÁ¿²ÎÊıÀ´µ÷ÕûÕ»£¬µÃµ½Õ»»ùÎ»ÖÃ
-	*   ¼ÇÂ¼µ÷ÓÃĞÅÏ¢
-	*   ¿ª±ÙÕ»¿Õ¼ä
-	*   µ÷ÓÃHOOK
+	* æ¥ä¸‹æ¥åšçš„äº‹æƒ…ï¼š
+	*   æ ¹æ®å‡½æ•°å¯å˜æ•°é‡å‚æ•°æ¥è°ƒæ•´æ ˆï¼Œå¾—åˆ°æ ˆåŸºä½ç½®
+	*   è®°å½•è°ƒç”¨ä¿¡æ¯
+	*   å¼€è¾Ÿæ ˆç©ºé—´
+	*   è°ƒç”¨HOOK
 	*/
-	/* base Ö¸ÏòµÚÒ»¸ö¹Ì¶¨²ÎÊı */
+	/* base æŒ‡å‘ç¬¬ä¸€ä¸ªå›ºå®šå‚æ•° */
     if (!p->is_vararg) {  /* no varargs? */
       base = func + 1;
       if (L->top > base + p->numparams)
@@ -301,7 +305,7 @@ int luaD_precall (lua_State *L, StkId func, int nresults) {
       func = restorestack(L, funcr);  /* previous call may change the stack */
     }
 
-	/* ¼ÇÂ¼±¾º¯ÊıµÄĞÅÏ¢ */
+	/* è®°å½•æœ¬å‡½æ•°çš„ä¿¡æ¯ */
     ci = inc_ci(L);  /* now `enter' new function */
     ci->func = func;
     L->base = ci->base = base;
@@ -311,7 +315,7 @@ int luaD_precall (lua_State *L, StkId func, int nresults) {
     ci->tailcalls = 0;
     ci->nresults = nresults;
 
-	/* µ±Ç°º¯ÊıµÄÕ»¿Õ¼äÄÚµÄÖµ¶¼ÉèÎªnil*/
+	/* å½“å‰å‡½æ•°çš„æ ˆç©ºé—´å†…çš„å€¼éƒ½è®¾ä¸ºnil*/
     for (st = L->top; st < ci->top; st++)
       setnilvalue(st);
 

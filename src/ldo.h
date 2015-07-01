@@ -12,13 +12,13 @@
 #include "lstate.h"
 #include "lzio.h"
 
-/* 在栈中增加n个元素的空间 */
+/* 检测栈中是否有n个元素的空间，不够的话，增长一些空间 */
 #define luaD_checkstack(L,n)	\
   if ((char *)L->stack_last - (char *)L->top <= (n)*(int)sizeof(TValue)) \
     luaD_growstack(L, n); \
   else condhardstacktests(luaD_reallocstack(L, L->stacksize - EXTRA_STACK - 1));
 
-/* 栈指针上移。栈空间不足时，增加1个栈空间 */
+/* 栈指针上移。首先检测栈空间是否有1个位置，否则增加栈空间 */
 #define incr_top(L) {luaD_checkstack(L,1); L->top++;}
 
 /* 
