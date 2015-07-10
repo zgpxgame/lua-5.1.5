@@ -41,6 +41,9 @@
 
 
 /*
+** 生成一个消息，表示某参数有错误
+** 应用场景：参数不合法（类型，或值范围错误）
+**
 ** Raises an error with the following message, where func is retrieved from the
 ** call stack:
 **
@@ -70,6 +73,8 @@ LUALIB_API int luaL_argerror (lua_State *L, int narg, const char *extramsg) {
 
 
 /*
+** 应用场景：参数类型错误时
+**
 ** Generates an error with a message like the following:
 **
 **     location: bad argument narg to 'func' (tname expected, got rt)
