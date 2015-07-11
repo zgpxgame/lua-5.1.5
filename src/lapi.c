@@ -1207,7 +1207,7 @@ LUA_API int lua_setfenv (lua_State *L, int idx) {
 **     lua_getfield(L, -1, "x");        // push result of t.x (2nd arg)
 **     lua_remove(L, -2);                  // remove 't' from the stack
 **     lua_pushinteger(L, 14);                          // 3rd argument
-**     lua_call(L, 3, 1);     /* call 'f' with 3 arguments and 1 result
+**     lua_call(L, 3, 1);     // call 'f' with 3 arguments and 1 result
 **     lua_setfield(L, LUA_GLOBALSINDEX, "a");        // set global 'a'
 **
 ** Note that the code above is "balanced": at its end, the stack is back to its
