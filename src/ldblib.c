@@ -95,12 +95,36 @@ static void treatstackoption (lua_State *L, lua_State *L1, const char *fname) {
   lua_setfield(L, -2, fname);
 }
 
-
+/*
+** debug.getinfo ([thread,] function [, what])
+** 
+** Returns a table with information about a function. You can give the function 
+** directly, or you can give a number as the value of function, which means the 
+** function running at level function of the call stack of the given thread: 
+** level 0 is the current function (getinfo itself); level 1 is the function 
+** that called getinfo; and so on. If function is a number larger than the 
+** number of active functions, then getinfo returns nil.
+**
+** The returned table can contain all the fields returned by lua_getinfo, with 
+** the string what describing which fields to fill in. The default for what is 
+** to get all information available, except the table of valid lines. If 
+** present, the option 'f' adds a field named func with the function itself. If 
+** present, the option 'L' adds a field named activelines with the table of 
+** valid lines.
+**
+** For instance, the expression debug.getinfo(1,"n").name returns a table with a
+** name for the current function, if a reasonable name can be found, and the 
+** expression debug.getinfo(print) returns a table with all available 
+** information about the print function.
+*/
 static int db_getinfo (lua_State *L) {
   lua_Debug ar;
   int arg;
+  /* get thread */
   lua_State *L1 = getthread(L, &arg);
+  /* get what */
   const char *options = luaL_optstring(L, arg+2, "flnSu");
+  /* level or function */
   if (lua_isnumber(L, arg+1)) {
     if (!lua_getstack(L1, (int)lua_tointeger(L, arg+1), &ar)) {
       lua_pushnil(L);  /* level out of range */

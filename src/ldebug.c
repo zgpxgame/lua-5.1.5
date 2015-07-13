@@ -228,7 +228,40 @@ static int auxgetinfo (lua_State *L, const char *what, lua_Debug *ar,
   return status;
 }
 
-
+/*
+** Returns information about a specific function or function invocation.
+**
+** To get information about a function invocation, the parameter ar must be a 
+** valid activation record that was filled by a previous call to lua_getstack or
+** given as argument to a hook (see lua_Hook).
+**
+** To get information about a function you push it onto the stack and start the 
+** what string with the character '>'. (In that case, lua_getinfo pops the 
+** function in the top of the stack.) For instance, to know in which line a 
+** function f was defined, you can write the following code:
+**
+**   lua_Debug ar;
+**   lua_getfield(L, LUA_GLOBALSINDEX, "f");  // get global 'f'
+**   lua_getinfo(L, ">S", &ar);
+**   printf("%d\n", ar.linedefined);
+** Each character in the string what selects some fields of the structure ar to 
+** be filled or a value to be pushed on the stack:
+**
+**   (*) 'n': fills in the field name and namewhat;
+**   (*) 'S': fills in the fields source, short_src, linedefined, 
+**            lastlinedefined, and what;
+**   (*) 'l': fills in the field currentline;
+**   (*) 'u': fills in the field nups;
+**   (*) 'f': pushes onto the stack the function that is running at the given 
+**            level;
+**   (*) 'L': pushes onto the stack a table whose indices are the numbers of the
+**            lines that are valid on the function. (A valid line is a line with
+** some associated code, that is, a line where you can put a break point. 
+** Non-valid lines include empty lines and comments.)
+** This function returns 0 on error (for instance, an invalid option in what).
+**
+** [-(0|1), +(0|1|2), m] 
+*/
 LUA_API int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar) {
   int status;
   Closure *f = NULL;
