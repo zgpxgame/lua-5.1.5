@@ -18,13 +18,18 @@
 #include "lualib.h"
 
 
-
+/*
+** Returns the registry table (see §3.5).
+*/
 static int db_getregistry (lua_State *L) {
   lua_pushvalue(L, LUA_REGISTRYINDEX);
   return 1;
 }
 
 
+/*
+** Returns the metatable of the given object or nil if it does not have a metatable.
+*/
 static int db_getmetatable (lua_State *L) {
   luaL_checkany(L, 1);
   if (!lua_getmetatable(L, 1)) {
@@ -34,6 +39,9 @@ static int db_getmetatable (lua_State *L) {
 }
 
 
+/*
+** This function assigns the value value to the upvalue with index up of the function func. The function returns nil if there is no upvalue with the given index. Otherwise, it returns the name of the upvalue.
+*/
 static int db_setmetatable (lua_State *L) {
   int t = lua_type(L, 2);
   luaL_argcheck(L, t == LUA_TNIL || t == LUA_TTABLE, 2,
@@ -44,6 +52,9 @@ static int db_setmetatable (lua_State *L) {
 }
 
 
+/*
+** Returns the environment of object o.
+*/
 static int db_getfenv (lua_State *L) {
   luaL_checkany(L, 1);
   lua_getfenv(L, 1);
@@ -51,6 +62,9 @@ static int db_getfenv (lua_State *L) {
 }
 
 
+/*
+** Sets the environment of the given object to the given table. Returns object.
+*/
 static int db_setfenv (lua_State *L) {
   luaL_checktype(L, 2, LUA_TTABLE);
   lua_settop(L, 2);
@@ -165,6 +179,11 @@ static int db_getinfo (lua_State *L) {
 }
     
 
+/*
+** This function returns the name and the value of the local variable with index local of the function at level level of the stack. (The first parameter or local variable has index 1, and so on, until the last active local variable.) The function returns nil if there is no local variable with the given index, and raises an error when called with a level out of range. (You can call debug.getinfo to check whether the level is valid.)
+**
+** Variable names starting with '(' (open parentheses) represent internal variables (loop control variables, temporaries, and C function locals).
+*/
 static int db_getlocal (lua_State *L) {
   int arg;
   lua_State *L1 = getthread(L, &arg);
@@ -185,7 +204,9 @@ static int db_getlocal (lua_State *L) {
   }
 }
 
-
+/*
+** This function assigns the value value to the local variable with index local of the function at level level of the stack. The function returns nil if there is no local variable with the given index, and raises an error when called with a level out of range. (You can call getinfo to check whether the level is valid.) Otherwise, it returns the name of the local variable.
+*/
 static int db_setlocal (lua_State *L) {
   int arg;
   lua_State *L1 = getthread(L, &arg);
@@ -213,11 +234,17 @@ static int auxupvalue (lua_State *L, int get) {
 }
 
 
+/*
+** This function returns the name and the value of the upvalue with index up of the function func. The function returns nil if there is no upvalue with the given index.
+*/
 static int db_getupvalue (lua_State *L) {
   return auxupvalue(L, 1);
 }
 
 
+/*
+** This function assigns the value value to the upvalue with index up of the function func. The function returns nil if there is no upvalue with the given index. Otherwise, it returns the name of the upvalue.
+*/
 static int db_setupvalue (lua_State *L) {
   luaL_checkany(L, 3);
   return auxupvalue(L, 0);
