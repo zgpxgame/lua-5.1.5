@@ -19,6 +19,8 @@
 
 
 /*
+** debug.getregistry ()
+**
 ** Returns the registry table (see §3.5).
 */
 static int db_getregistry (lua_State *L) {
@@ -28,6 +30,8 @@ static int db_getregistry (lua_State *L) {
 
 
 /*
+** debug.getmetatable (object)
+**
 ** Returns the metatable of the given object or nil if it does not have a 
 ** metatable.
 */
@@ -41,9 +45,10 @@ static int db_getmetatable (lua_State *L) {
 
 
 /*
-** This function assigns the value value to the upvalue with index up of the 
-** function func. The function returns nil if there is no upvalue with the given
-** index. Otherwise, it returns the name of the upvalue.
+** debug.setmetatable (object, table)
+**
+** Sets the metatable for the given object to the given table (which can be 
+** nil).
 */
 static int db_setmetatable (lua_State *L) {
   int t = lua_type(L, 2);
@@ -56,6 +61,8 @@ static int db_setmetatable (lua_State *L) {
 
 
 /*
+** debug.getfenv (o)
+**
 ** Returns the environment of object o.
 */
 static int db_getfenv (lua_State *L) {
@@ -66,6 +73,8 @@ static int db_getfenv (lua_State *L) {
 
 
 /*
+** debug.setfenv (object, table)
+**
 ** Sets the environment of the given object to the given table. Returns object.
 */
 static int db_setfenv (lua_State *L) {
@@ -183,6 +192,8 @@ static int db_getinfo (lua_State *L) {
     
 
 /*
+** debug.getlocal ([thread,] level, local)
+**
 ** This function returns the name and the value of the local variable with index
 ** local of the function at level level of the stack. (The first parameter or 
 ** local variable has index 1, and so on, until the last active local variable.)
@@ -214,11 +225,13 @@ static int db_getlocal (lua_State *L) {
 }
 
 /*
-** This function assigns the value value to the local variable with index local 
-** of the function at level level of the stack. The function returns nil if 
-** there is no local variable with the given index, and raises an error when 
-** called with a level out of range. (You can call getinfo to check whether the 
-** level is valid.) Otherwise, it returns the name of the local variable.
+** debug.setlocal ([thread,] level, local, value)
+**
+** This function assigns the value {value} to the local variable with index  
+** {local} of the function at level {level} of the stack. The function returns 
+** nil if there is no local variable with the given index, and raises an error 
+** when called with a level out of range. (You can call getinfo to check whether
+** the level is valid.) Otherwise, it returns the name of the local variable.
 */
 static int db_setlocal (lua_State *L) {
   int arg;
@@ -248,6 +261,8 @@ static int auxupvalue (lua_State *L, int get) {
 
 
 /*
+** debug.getupvalue (func, up)
+**
 ** This function returns the name and the value of the upvalue with index up of 
 ** the function func. The function returns nil if there is no upvalue with the 
 ** given index.
@@ -258,9 +273,11 @@ static int db_getupvalue (lua_State *L) {
 
 
 /*
-** This function assigns the value value to the upvalue with index up of the 
-** function func. The function returns nil if there is no upvalue with the given
-** index. Otherwise, it returns the name of the upvalue.
+** debug.setupvalue (func, up, value)
+**
+** This function assigns the value {value} to the upvalue with index {up} of the 
+** function {func}. The function returns nil if there is no upvalue with the 
+** given index. Otherwise, it returns the name of the upvalue.
 */
 static int db_setupvalue (lua_State *L) {
   luaL_checkany(L, 3);
@@ -323,6 +340,30 @@ static void gethooktable (lua_State *L) {
 }
 
 
+/*
+** debug.sethook ([thread,] hook, mask [, count])
+**
+** Sets the given function as a hook. The string mask and the number count 
+** describe when the hook will be called. The string mask may have the following
+** characters, with the given meaning:
+**
+**   (*) "c": the hook is called every time Lua calls a function;
+**   (*) "r": the hook is called every time Lua returns from a function;
+**   (*) "l": the hook is called every time Lua enters a new line of code.
+**   (*) With a count different from zero, the hook is called after every count 
+**       instructions.
+**
+** When called without arguments, debug.sethook turns off the hook.
+**
+** When the hook is called, its first parameter is a string describing the event
+** that has triggered its call: "call", "return" (or "tail return", when 
+** simulating a return from a tail call), "line", and "count". For line events, 
+** the hook also gets the new line number as its second parameter. Inside a 
+** hook, you can call getinfo with level 2 to get more information about the 
+** running function (level 0 is the getinfo function, and level 1 is the hook 
+** function), unless the event is "tail return". In this case, Lua is only 
+** simulating the return, and a call to getinfo will return invalid data.
+*/
 static int db_sethook (lua_State *L) {
   int arg, mask, count;
   lua_Hook func;
@@ -347,6 +388,13 @@ static int db_sethook (lua_State *L) {
 }
 
 
+/*
+** debug.gethook ([thread])
+** 
+** Returns the current hook settings of the thread, as three values: the current
+** hook function, the current hook mask, and the current hook count (as set by 
+** the debug.sethook function).
+*/
 static int db_gethook (lua_State *L) {
   int arg;
   lua_State *L1 = getthread(L, &arg);
@@ -367,6 +415,18 @@ static int db_gethook (lua_State *L) {
 }
 
 
+/*
+** debug.debug ()
+**
+** Enters an interactive mode with the user, running each string that the user 
+** enters. Using simple commands and other debug facilities, the user can 
+** inspect global and local variables, change their values, evaluate 
+** expressions, and so on. A line containing only the word cont finishes this 
+** function, so that the caller continues its execution.
+**
+** Note that commands for debug.debug are not lexically nested within any 
+** function, and so have no direct access to local variables.
+*/
 static int db_debug (lua_State *L) {
   for (;;) {
     char buffer[250];
@@ -384,6 +444,14 @@ static int db_debug (lua_State *L) {
 }
 
 
+/*
+** debug.traceback ([thread,] [message [, level]])
+**
+** Returns a string with a traceback of the call stack. An optional message 
+** string is appended at the beginning of the traceback. An optional level 
+** number tells at which level to start the traceback (default is 1, the 
+** function calling traceback).
+*/
 #define LEVELS1	12	/* size of the first part of the stack */
 #define LEVELS2	10	/* size of the second part of the stack */
 
