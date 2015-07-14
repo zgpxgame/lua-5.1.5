@@ -19,7 +19,7 @@
 
 
 /*
-** Returns the registry table (see Â§3.5).
+** Returns the registry table (see ¡ì3.5).
 */
 static int db_getregistry (lua_State *L) {
   lua_pushvalue(L, LUA_REGISTRYINDEX);
