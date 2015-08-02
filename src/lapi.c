@@ -451,7 +451,7 @@ LUA_API int lua_lessthan (lua_State *L, int index1, int index2) {
 /*
 ** Converts the Lua value at the given acceptable index to the C type lua_Number
 ** (see lua_Number). The Lua value must be a number or a string convertible to a
-** number (see ��2.2.1); otherwise, lua_tonumber returns 0.
+** number (see §2.2.1); otherwise, lua_tonumber returns 0.
 **
 ** [-0, +0, -]
 */
@@ -468,7 +468,7 @@ LUA_API lua_Number lua_tonumber (lua_State *L, int idx) {
 /*
 ** Converts the Lua value at the given acceptable index to the signed integral 
 ** type lua_Integer. The Lua value must be a number or a string convertible to a
-** number (see ��2.2.1); otherwise, lua_tointeger returns 0.
+** number (see §2.2.1); otherwise, lua_tointeger returns 0.
 **
 ** If the number is not an integer, it is truncated in some non-specified way.
 **
@@ -758,7 +758,7 @@ LUA_API const char *lua_pushfstring (lua_State *L, const char *fmt, ...) {
 ** Pushes a new C closure onto the stack.
 **
 ** When a C function is created, it is possible to associate some values with
-** it, thus creating a C closure (see ��3.4); these values are then accessible to
+** it, thus creating a C closure (see §3.4); these values are then accessible to
 ** the function whenever it is called. To associate values with a C function,
 ** first these values should be pushed onto the stack (when there are multiple
 ** values, the first value is pushed first). Then lua_pushcclosure is called to
@@ -845,7 +845,7 @@ LUA_API int lua_pushthread (lua_State *L) {
 **
 ** This function pops the key from the stack (putting the resulting value in its
 ** place). As in Lua, this function may trigger a metamethod for the "index"
-** event (see ��2.8).
+** event (see §2.8).
 **
 ** [-1, +1, e]
 */
@@ -862,7 +862,7 @@ LUA_API void lua_gettable (lua_State *L, int idx) {
 /*
 ** Pushes onto the stack the value t[k], where t is the value at the given valid
 ** index. As in Lua, this function may trigger a metamethod for the "index"
-** event (see ��2.8).
+** event (see §2.8).
 **
 ** [-0, +1, e]
 */
@@ -1004,7 +1004,7 @@ LUA_API void lua_getfenv (lua_State *L, int idx) {
 ** the top.
 **
 ** This function pops both the key and the value from the stack. As in Lua, this
-** function may trigger a metamethod for the "newindex" event (see ��2.8).
+** function may trigger a metamethod for the "newindex" event (see §2.8).
 **
 ** [-2, +0, e]
 */
@@ -1025,7 +1025,7 @@ LUA_API void lua_settable (lua_State *L, int idx) {
 ** index and v is the value at the top of the stack.
 **
 ** This function pops the value from the stack. As in Lua, this function may
-** trigger a metamethod for the "newindex" event (see ��2.8).
+** trigger a metamethod for the "newindex" event (see §2.8).
 **
 ** [-1, +0, e]
 */
@@ -1358,7 +1358,7 @@ LUA_API int lua_cpcall (lua_State *L, lua_CFunction func, void *ud) {
 ** function.
 **
 ** The chunkname argument gives a name to the chunk, which is used for error
-** messages and in debug information (see ��3.8).
+** messages and in debug information (see §3.8).
 **
 ** [-0, +1, -]
 */
@@ -1438,10 +1438,25 @@ LUA_API int  lua_status (lua_State *L) {
 **     experimentally tune the value of data. The function returns 1 if the step
 **     finished a garbage-collection cycle.
 ** (*) LUA_GCSETPAUSE: sets data as the new value for the pause of the collector
-**     (see ��2.10). The function returns the previous value of the pause.
+**     (see §2.10). The function returns the previous value of the pause.
 ** (*) LUA_GCSETSTEPMUL: sets data as the new value for the step multiplier of
-**     the collector (see ��2.10). The function returns the previous value of the
+**     the collector (see §2.10). The function returns the previous value of the
 **     step multiplier.
+**
+** 垃圾回收函数
+** 控制垃圾回收
+** 这个函数根据参数what值的不同，会执行不同的任务
+** (*) LUA_GC_STOP: 停止垃圾回收
+** (*) LUA_GCRESTART: 重新启动垃圾回收
+** (*) LUA_GCCLOLECT: 执行一次完整的垃圾回收
+** (*) LUA_GCCOUNT: 返回被LUA使用的内存量，以Kbytes为单位
+** (*) LUA_GCCOUNTB: 返回LUA使用的内存量对1024的余数
+** (*) LUA_GCSTEP: 执行一次增量的垃圾回收。通过data指定步长，data值越大，表示更
+**     大的步长，data和步长没有一个确定的计算关系，如果需要控制步长的大小，你必
+**     须用试验的方式调整data的值。如果这一步完成了一个垃圾回收周期，这个函数就
+**     返回1
+** (*) LUA_GCSETPAUSE: 
+** (*) LUA_GCSETSTEPMUL:
 **
 ** [-0, +0, e]
 */
@@ -1473,6 +1488,7 @@ LUA_API int lua_gc (lua_State *L, int what, int data) {
       break;
     }
     case LUA_GCSTEP: {
+      /* a = data * 1024 */
       lu_mem a = (cast(lu_mem, data) << 10);
       if (a <= g->totalbytes)
         g->GCthreshold = g->totalbytes - a;
@@ -1569,7 +1585,7 @@ LUA_API int lua_next (lua_State *L, int idx) {
 ** result at the top. If n is 1, the result is the single value on the stack 
 ** (that is, the function does nothing); if n is 0, the result is the empty 
 ** string. Concatenation is performed following the usual semantics of Lua 
-** (see ��2.5.4).
+** (see §2.5.4).
 **
 ** [-n, +1, e]
 */

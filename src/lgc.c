@@ -22,6 +22,7 @@
 #include "ltable.h"
 #include "ltm.h"
 
+/* Tri-color Marking */
 
 #define GCSTEPSIZE	1024u
 #define GCSWEEPMAX	40
@@ -618,6 +619,7 @@ void luaC_step (lua_State *L) {
     if (g->gcstate == GCSpause)
       break;
   } while (lim > 0);
+
   if (g->gcstate != GCSpause) {
     if (g->gcdept < GCSTEPSIZE)
       g->GCthreshold = g->totalbytes + GCSTEPSIZE;  /* - lim/g->gcstepmul;*/
@@ -634,6 +636,8 @@ void luaC_step (lua_State *L) {
 
 void luaC_fullgc (lua_State *L) {
   global_State *g = G(L);
+  
+  /* 先把未完成的GC完成 */
   if (g->gcstate <= GCSpropagate) {
     /* reset sweep marks to sweep all elements (returning them to white) */
     g->sweepstrgc = 0;
@@ -650,6 +654,8 @@ void luaC_fullgc (lua_State *L) {
     lua_assert(g->gcstate == GCSsweepstring || g->gcstate == GCSsweep);
     singlestep(L);
   }
+  
+  /* 再进行一次完整的GC */
   markroot(L);
   while (g->gcstate != GCSpause) {
     singlestep(L);
