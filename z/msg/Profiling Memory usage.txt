@@ -1,0 +1,136 @@
+Subject: Profiling Memory usage.
+From: Jorge <xxopxe@...>
+Date: Wed, 01 Apr 2009 15:28:45 -0300
+Hi list.
+
+I wonder how to profile memory usage. I have this application, a
+content-based router that moves notifications and subscriptions trough a
+p2p network. It's based around a socket server (LuaSocket based), and
+keeps lots of tables for peer lists, loop detection, subscription
+filters, and assorted stuff. The memory consumption fluctuates a lot
+with usage patterns, and there are a few configuration parameters that
+have a serious impact.
+It's intended to be run on plain consumer-grade wireless routers
+(WRT54GL's and such), so RAM consumption is an issue.
+I've googled around and only found stuff related to pre-5.1 lua,and
+wonder if there's an easy way to see what tables are consuming what.
+
+Thanks in advance,
+
+Jorge
+
+
+
+Subject: Re: Profiling Memory usage.
+From: Ico <lua@...>
+Date: Thu, 2 Apr 2009 17:31:07 +0200
+
+Jorge,
+
+* On 2009-04-01 Jorge <xxopxe@gmail.com> wrote  :
+
+> I wonder how to profile memory usage. I have this application, a
+> content-based router that moves notifications and subscriptions trough
+> a p2p network. It's based around a socket server (LuaSocket based),
+> and keeps lots of tables for peer lists, loop detection, subscription
+> filters, and assorted stuff. The memory consumption fluctuates a lot
+> with usage patterns, and there are a few configuration parameters that
+> have a serious impact.  It's intended to be run on plain
+> consumer-grade wireless routers (WRT54GL's and such), so RAM
+> consumption is an issue.  I've googled around and only found stuff
+> related to pre-5.1 lua,and wonder if there's an easy way to see what
+> tables are consuming what.
+
+As far as I know, there is no easy way to do this. A method I sometimes
+use is to check the memory usage, dereference the table and all its
+objects, and check memory usage again. This is of course destructive,
+but for debugging purposes it gives a good idea of the memory used by a
+table, if you keep in mind some internals about lua's bookkeeping.
+
+Another method to give an rough estimation of the size would be to
+recursively iterate the table, keeping count of the various objects you
+encounter and adding up the memory of each object. You could do some
+tests to determine the approximate size of various native lua objects,
+and keeping in mind that strings are interned and only stored once and
+that the numeric index of a table is always a power of two, you should
+be able to get an idea of the size of a given table.
+
+
+
+Subject: Re: Profiling Memory usage.
+From: Matthew Wild <mwild1@...>
+Date: Thu, 2 Apr 2009 16:39:33 +0100
+On Wed, Apr 1, 2009 at 7:28 PM, Jorge <xxopxe@gmail.com> wrote:
+> Hi list.
+>
+> I wonder how to profile memory usage. I have this application, a
+> content-based router that moves notifications and subscriptions trough a
+> p2p network. It's based around a socket server (LuaSocket based), and
+> keeps lots of tables for peer lists, loop detection, subscription
+> filters, and assorted stuff. The memory consumption fluctuates a lot
+> with usage patterns, and there are a few configuration parameters that
+> have a serious impact.
+> It's intended to be run on plain consumer-grade wireless routers
+> (WRT54GL's and such), so RAM consumption is an issue.
+> I've googled around and only found stuff related to pre-5.1 lua,and
+> wonder if there's an easy way to see what tables are consuming what.
+>
+
+I have exactly the same problem with not having enough tools to view
+memory usage (also in a server).
+
+I found this a while ago, but have yet to try it:
+http://jan.kneschke.de/projects/profiling-lua-with-kcachegrind
+
+It might be worth a try, it looks good.
+
+Matthew.
+
+
+
+Subject: Re: Profiling Memory usage.
+From: Luiz Henrique de Figueiredo <lhf@...>
+Date: Thu, 2 Apr 2009 14:47:05 -0300
+> I have exactly the same problem with not having enough tools to view
+> memory usage (also in a server).
+
+Alexandra Barros wrote a tool to traverse the whole Lua universe:
+	http://lua-users.org/lists/lua-l/2006-07/msg00110.html
+
+
+
+Subject: Re: Profiling Memory usage.
+From: Matthew Wild <mwild1@...>
+Date: Thu, 2 Apr 2009 20:17:33 +0100
+On Thu, Apr 2, 2009 at 6:47 PM, Luiz Henrique de Figueiredo
+<lhf@tecgraf.puc-rio.br> wrote:
+>> I have exactly the same problem with not having enough tools to view
+>> memory usage (also in a server).
+>
+> Alexandra Barros wrote a tool to traverse the whole Lua universe:
+>        http://lua-users.org/lists/lua-l/2006-07/msg00110.html
+>
+
+Thanks Luiz (and of course Alexandra...) I was looking to write
+something like this too, but this one is far more complete than mine
+would have been :)
+
+I'll have a play with it tomorrow.
+
+Matthew.
+
+
+
+
+Subject: Re: Profiling Memory usage.
+From: Jorge <xxopxe@...>
+Date: Thu, 02 Apr 2009 17:52:50 -0300
+On Thu, 2009-04-02 at 20:17 +0100, Matthew Wild wrote:
+> Thanks Luiz (and of course Alexandra...) I was looking to write
+> something like this too, but this one is far more complete than mine
+> would have been :)
+
+That does look clever indeed. I guess it must be possible to extract mem
+usage from there, even if i don't have a clue how right now.
+
+Jorge

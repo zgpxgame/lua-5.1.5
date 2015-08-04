@@ -1,0 +1,194 @@
+Subject: Tracking memory usage
+From: Paul K <paulclinger@...>
+Date: Wed, 12 Sep 2012 21:20:31 -0700
+
+I'm sure there are people on the list who have answers to these
+questions. Those who know don't tell? ;)
+
+Paul.
+
+---------- Forwarded message ----------
+From: Paul K <paulclinger@yahoo.com>
+Date: Sat, Aug 25, 2012 at 12:11 AM
+Subject: Tracking memory usage
+To: Lua mailing list <lua-l@lists.lua.org>
+
+I've been reading about optimizing memory usage in Lua
+(http://fmeus.wordpress.com/2009/01/19/optimizing-memory-usage-in-lua/
+and http://bitsquid.blogspot.com/2011/08/fixing-memory-issues-in-lua.html)
+and would like to be able to show memory statistics for my Lua
+applications. I know about collectgarbage("count"), but I'm trying to
+get more detailed information about memory allocations using available
+Lua methods.
+
+One thing that comes to mind is to track call/return events using
+debug hook and take snapshots of allocated memory during those events.
+Two questions related to that:
+1. Do I need to call collectgarbage("collect") before calling "count"
+to get a proper number?
+2. This information is missing all the allocations that happen during
+function execution. Or do I need to call "count" twice in the "return"
+event to get the amount of allocated memory:
+
+"call" event
+  collectgrabage("collect")
+  initial = collectgarbage("count")
+
+"return" event
+  allocated = collectgarbage("count")
+  collectgarbage("collect") -- does this free the memory deallocated
+in the blog?
+  final = collectgarbage("count")
+
+Does "final - allocated" tell me the amount of memory *temporarily*
+allocated/released by the function/block?
+Does "final - initial" tell me the amount of memory allocated by the
+function/block in global/upvalue variables?
+
+Also, is there any way to see how much memory is allocated by a
+particular data structure (a table)? Even approximately/heuristically,
+based on the number of array/hash elements it stores?
+
+If none of this is possible using existing Lua methods, is there a
+module available from Lua that provides that information? Thank you.
+
+Paul.
+
+
+
+Subject: Re: Tracking memory usage
+From: Matthew Wild <mwild1@...>
+Date: Thu, 13 Sep 2012 18:17:23 +0100
+
+On 25 August 2012 08:11, Paul K <paulclinger@yahoo.com> wrote:
+> I've been reading about optimizing memory usage in Lua
+> (http://fmeus.wordpress.com/2009/01/19/optimizing-memory-usage-in-lua/
+> and http://bitsquid.blogspot.com/2011/08/fixing-memory-issues-in-lua.html)
+> and would like to be able to show memory statistics for my Lua
+> applications. I know about collectgarbage("count"), but I'm trying to
+> get more detailed information about memory allocations using available
+> Lua methods.
+>
+> One thing that comes to mind is to track call/return events using
+> debug hook and take snapshots of allocated memory during those events.
+> Two questions related to that:
+> 1. Do I need to call collectgarbage("collect") before calling "count"
+> to get a proper number?
+
+Depending on what you mean by "proper number", possibly, yes. If you
+want to only count live objects, and not temporary ones that have
+already been freed, you need to force a GC run to find and clear the
+freed ones away.
+
+> 2. This information is missing all the allocations that happen during
+> function execution. Or do I need to call "count" twice in the "return"
+> event to get the amount of allocated memory:
+
+Yes, if you want all memory ever allocated. Don't forget that the GC
+may run of its own accord during the function execution. If you don't
+want this to happen, collectgarbage("stop"). Be careful - running a
+collection manaually automatically restarts it again.
+
+> Also, is there any way to see how much memory is allocated by a
+> particular data structure (a table)? Even approximately/heuristically,
+> based on the number of array/hash elements it stores?
+
+Take a look at http://code.matthewwild.co.uk/lua-getsize/ to get you
+started. There has been some discussion about it on this list too, if
+you search (the original code was not by me - I adopted and
+improved/extended it because it was useful).
+
+Regards,
+Matthew
+
+
+
+Subject: Re: Tracking memory usage
+From: Paul K <paulclinger@...>
+Date: Thu, 13 Sep 2012 11:48:44 -0700
+
+Hi Matthew,
+
+Thank you for the pointers. I looked at lua-getsize as you suggested
+and also at luatraverse example in your repository and it seems to be
+very close to what I need; there was also en interesting related
+discussion in this thread:
+http://comments.gmane.org/gmane.comp.lang.lua.general/66253.
+
+I also realized that I can adapt the traversing logic I have in my
+Serpent serializer to count the size of complex data structures
+instead of serializing them.
+
+Just one quick note: to be able to implement getsize in Lua, it would
+be convenient to have a function in debug namespace that would return
+an array with all sizeof values for various types. I think everything
+else can be calculated (or at least estimated from Lua).
+
+Paul
+
+On Thu, Sep 13, 2012 at 10:17 AM, Matthew Wild <mwild1@gmail.com> wrote:
+> On 25 August 2012 08:11, Paul K <paulclinger@yahoo.com> wrote:
+>> I've been reading about optimizing memory usage in Lua
+>> (http://fmeus.wordpress.com/2009/01/19/optimizing-memory-usage-in-lua/
+>> and http://bitsquid.blogspot.com/2011/08/fixing-memory-issues-in-lua.html)
+>> and would like to be able to show memory statistics for my Lua
+>> applications. I know about collectgarbage("count"), but I'm trying to
+>> get more detailed information about memory allocations using available
+>> Lua methods.
+>>
+>> One thing that comes to mind is to track call/return events using
+>> debug hook and take snapshots of allocated memory during those events.
+>> Two questions related to that:
+>> 1. Do I need to call collectgarbage("collect") before calling "count"
+>> to get a proper number?
+>
+> Depending on what you mean by "proper number", possibly, yes. If you
+> want to only count live objects, and not temporary ones that have
+> already been freed, you need to force a GC run to find and clear the
+> freed ones away.
+>
+>> 2. This information is missing all the allocations that happen during
+>> function execution. Or do I need to call "count" twice in the "return"
+>> event to get the amount of allocated memory:
+>
+> Yes, if you want all memory ever allocated. Don't forget that the GC
+> may run of its own accord during the function execution. If you don't
+> want this to happen, collectgarbage("stop"). Be careful - running a
+> collection manaually automatically restarts it again.
+>
+>> Also, is there any way to see how much memory is allocated by a
+>> particular data structure (a table)? Even approximately/heuristically,
+>> based on the number of array/hash elements it stores?
+>
+> Take a look at http://code.matthewwild.co.uk/lua-getsize/ to get you
+> started. There has been some discussion about it on this list too, if
+> you search (the original code was not by me - I adopted and
+> improved/extended it because it was useful).
+>
+> Regards,
+> Matthew
+>
+
+
+
+Subject: Re: Tracking memory usage
+From: Matthew Wild <mwild1@...>
+Date: Fri, 14 Sep 2012 14:21:08 +0100
+
+On 13 September 2012 19:48, Paul K <paulclinger@yahoo.com> wrote:
+> Just one quick note: to be able to implement getsize in Lua, it would
+> be convenient to have a function in debug namespace that would return
+> an array with all sizeof values for various types. I think everything
+> else can be calculated (or at least estimated from Lua).
+
+Yes, it could do that. It won't be quite as accurate though. For
+example you can't get the memory consumed by empty table slots in Lua
+(unless a function for this was exposed to Lua also). Ultimately I
+decided it was just simpler to keep all that logic in C and expose one
+simple generic function to Lua.
+
+Regards,
+Matthew
+
+
+

@@ -1,0 +1,29 @@
+Subject: Re: HELP - leak in lua 5.0.3
+From: "Alexandra Barros" <alexandra.barros@...>
+Date: Thu, 13 Jul 2006 11:52:47 -0300
+Hi,
+
+Here is the tool. You can implement a function that gives you the information you want and then call the function traverse passing your function as a parameter. As an example, you can look at the functions 'countreferences' and 'findallpaths'. But if these functions already gives you all the information you want... well.. that's better =) 
+But it hasn't been fully tested yet. Please, report me if you find any bugs.
+
+Thanks,
+Alexandra.
+
+On 7/12/06, Roberto Ierusalimschy < roberto@inf.puc-rio.br> wrote:
+> Sorry, no insights into this leak specifically, but it 
+> does bring up a possible suggestion for Lua 5.2 (or 6.0,
+> or whatever) - the ability to programatically walk or otherwise
+> instrument the not-dead object set in a similar manner to how the
+> GC does. 
+
+You can do that in Lua itself, using some reflexive facilities. I guess
+someone in the list did some tool for this. A student of mine also
+wrote such tool (to traverse all live objects of a state). If she is 
+not in the list, you may contact her directly:
+
+  Alexandra Barros <abarros at inf dot puc-rio dot br>
+
+-- Roberto
+
+Attachment: luatraverse.lua
+Description: Binary data
