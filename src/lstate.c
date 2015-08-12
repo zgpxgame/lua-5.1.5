@@ -38,7 +38,9 @@ typedef struct LG {
 } LG;
   
 
-
+/*
+** 初始化lua状态机的栈，包括函数调用栈(ci)，寄存器栈(stack)
+*/
 static void stack_init (lua_State *L1, lua_State *L) {
   /* initialize CallInfo array */
   L1->base_ci = luaM_newvector(L, BASIC_CI_SIZE, CallInfo);

@@ -94,6 +94,7 @@ static lua_CFunction ll_sym (lua_State *L, void *lib, const char *sym) {
 
 #undef setprogdir
 
+/* 将path中的!替换为可行文件的路径 */
 static void setprogdir (lua_State *L) {
   char buff[MAX_PATH + 1];
   char *lb;
@@ -448,6 +449,50 @@ static const int sentinel_ = 0;
 #define sentinel	((void *)&sentinel_)
 
 
+/*
+** require (modname)
+**
+** Loads the given module. The function starts by looking into the 
+** package.loaded table to determine whether modname is already loaded. If it
+** is, then require returns the value stored at package.loaded[modname].
+** Otherwise, it tries to find a loader for the module.
+**
+** To find a loader, require is guided by the package.loaders array. By changing
+** this array, we can change how require looks for a module. The following
+** explanation is based on the default configuration for package.loaders.
+**
+** First require queries package.preload[modname]. If it has a value, this value
+** (which should be a function) is the loader. Otherwise require searches for a 
+** Lua loader using the path stored in package.path. If that also fails, it 
+** searches for a C loader using the path stored in package.cpath. If that also 
+** fails, it tries an all-in-one loader (see package.loaders).
+**
+** Once a loader is found, require calls the loader with a single argument, 
+** modname. If the loader returns any value, require assigns the returned value 
+** to package.loaded[modname]. If the loader returns no value and has not 
+** assigned any value to package.loaded[modname], then require assigns true to
+** this entry. In any case, require returns the final value of
+** package.loaded[modname].
+**
+** If there is any error loading or running the module, or if it cannot find any
+** loader for the module, then require signals an error.
+**
+** require的行为演示
+** function require (name)
+**   if not package.loaded[name] then -- module not loaded yet?
+**     local loader = findloader(name)
+**     if loader == nil then
+**       error("unable to load module " .. name)
+**     end
+**     package.loaded[name] = true -- mark module as loaded
+**     local res = loader(name) -- initialize module
+**     if res ~= nil then
+**       package.loaded[name] = res
+**    end
+**  end
+**  return package.loaded[name]
+** end
+*/
 static int ll_require (lua_State *L) {
   const char *name = luaL_checkstring(L, 1);
   int i;
@@ -503,19 +548,24 @@ static int ll_require (lua_State *L) {
 ** =======================================================
 */
   
-
+/* 
+** 设置当前函数的环境表为模块表，这样会使模块中定义的函数都被设置到模块表中
+** 调用条件：栈顶是函数环境表
+*/
 static void setfenv (lua_State *L) {
   lua_Debug ar;
-  if (lua_getstack(L, 1, &ar) == 0 ||
+  if (lua_getstack(L, 1, &ar) == 0 || /* 取出调用module()的函数的信息 */
       lua_getinfo(L, "f", &ar) == 0 ||  /* get calling function */
-      lua_iscfunction(L, -1))
+      lua_iscfunction(L, -1)) { /* 由C函数调用module() */
     luaL_error(L, LUA_QL("module") " not called from a Lua function");
+  }
+
   lua_pushvalue(L, -2);
   lua_setfenv(L, -2);
   lua_pop(L, 1);
 }
 
-
+/* 将模块表作为参数调用可选参数中的函数 */
 static void dooptions (lua_State *L, int n) {
   int i;
   for (i = 2; i <= n; i++) {
@@ -525,22 +575,49 @@ static void dooptions (lua_State *L, int n) {
   }
 }
 
-
+/* 设置module._M, module._NAME, module._PACKAGE */
 static void modinit (lua_State *L, const char *modname) {
   const char *dot;
+  /* stack -1:mod_table */
   lua_pushvalue(L, -1);
   lua_setfield(L, -2, "_M");  /* module._M = module */
   lua_pushstring(L, modname);
-  lua_setfield(L, -2, "_NAME");
+  lua_setfield(L, -2, "_NAME"); /* module._NAME = modname */
   dot = strrchr(modname, '.');  /* look for last dot in module name */
   if (dot == NULL) dot = modname;
   else dot++;
+
+  /*
+  ** module._PACKAGE = package_name
+  ** 比如 modname 是 "A.B.C"，那么 "A.B." 作为包名
+  */
   /* set _PACKAGE as package name (full module name minus last part) */
   lua_pushlstring(L, modname, dot - modname);
   lua_setfield(L, -2, "_PACKAGE");
 }
 
 
+/*
+** module (name [, ···])
+**
+** Creates a module. If there is a table in package.loaded[name], this table is 
+** the module. Otherwise, if there is a global table t with the given name, this
+** table is the module. Otherwise creates a new table t and sets it as the value
+** of the global name and the value of package.loaded[name]. This function also 
+** initializes t._NAME with the given name, t._M with the module (t itself), and
+** t._PACKAGE with the package name (the full module name minus last component; 
+** see below). Finally, module sets t as the new environment of the current
+** function and the new value of package.loaded[name], so that require returns
+** t.
+**
+** If name is a compound name (that is, one with components separated by dots), 
+** module creates (or reuses, if they already exist) tables for each component. 
+** For instance, if name is a.b.c, then module stores the module table in field 
+** c of field b of global a.
+**
+** This function can receive optional options after the module name, where each 
+** option is a function to be applied over the module.
+*/
 static int ll_module (lua_State *L) {
   const char *modname = luaL_checkstring(L, 1);
   int loaded = lua_gettop(L) + 1;  /* index of _LOADED table */
@@ -554,6 +631,7 @@ static int ll_module (lua_State *L) {
     lua_pushvalue(L, -1);
     lua_setfield(L, loaded, modname);  /* _LOADED[modname] = new table */
   }
+  /* stack 1:modname, 2:_LOADED, 3:mod_table */
   /* check whether table already has a _NAME field */
   lua_getfield(L, -1, "_NAME");
   if (!lua_isnil(L, -1))  /* is table an initialized module? */
@@ -569,6 +647,16 @@ static int ll_module (lua_State *L) {
 }
 
 
+/*
+** Sets a metatable for module with its __index field referring to the global 
+** environment, so that this module inherits values from the global environment.
+** To be used as an option to function module.
+** 
+** 给module表设置一个元表，其元表的__index字段指向全局环境，从而使module表继承了
+** 全局环境中的所有值
+**
+** 通常的用法是 module("a.b.c", pakcage.seeall)
+*/
 static int ll_seeall (lua_State *L) {
   luaL_checktype(L, 1, LUA_TTABLE);
   if (!lua_getmetatable(L, 1)) {
@@ -589,6 +677,12 @@ static int ll_seeall (lua_State *L) {
 /* auxiliary mark (for internal use) */
 #define AUXMARK		"\1"
 
+/*
+** 此函数用于设置package.path, package.cpath
+** 从环境变量中取出路径(LUA_PATH, 或LUA_CPATH)，将其作为模块的搜索路径，如果没有
+** 相应的环境变量，则使用默认路径，路径中的";;"代表默认路径，"!"代表可执行文件的
+** 路径
+*/
 static void setpath (lua_State *L, const char *fieldname, const char *envname,
                                    const char *def) {
   const char *path = getenv(envname);
@@ -627,18 +721,31 @@ static const lua_CFunction loaders[] =
 LUALIB_API int luaopen_package (lua_State *L) {
   int i;
   /* create new type _LOADLIB */
-  luaL_newmetatable(L, "_LOADLIB");
+  luaL_newmetatable(L, "_LOADLIB"); /* registry._LOADLIB = {} */
   lua_pushcfunction(L, gctm);
-  lua_setfield(L, -2, "__gc");
-  /* create `package' table */
+  lua_setfield(L, -2, "__gc");	/* registry._LOADLIB.__gc = gctm */
+
+  /* 
+  ** create `package' table
+  **   package.loadlib
+  **   package.seeall
+  */
   luaL_register(L, LUA_LOADLIBNAME, pk_funcs);
 #if defined(LUA_COMPAT_LOADLIB) 
   lua_getfield(L, -1, "loadlib");
   lua_setfield(L, LUA_GLOBALSINDEX, "loadlib");
 #endif
+
+  /* 什么用? */
   lua_pushvalue(L, -1);
   lua_replace(L, LUA_ENVIRONINDEX);
-  /* create `loaders' table */
+
+
+  /*
+  ** 设置package表的loaders, path, cpath, config, loaded, preload等字段，这些
+  ** 字段会在require中加载模块时用到
+  */
+  /* create `loaders' table, stack 1:_LOADLIB, 2:package */
   lua_createtable(L, sizeof(loaders)/sizeof(loaders[0]) - 1, 0);
   /* fill it with pre-defined loaders */
   for (i=0; loaders[i] != NULL; i++) {
@@ -646,21 +753,30 @@ LUALIB_API int luaopen_package (lua_State *L) {
     lua_rawseti(L, -2, i+1);
   }
   lua_setfield(L, -2, "loaders");  /* put it in field `loaders' */
+
   setpath(L, "path", LUA_PATH, LUA_PATH_DEFAULT);  /* set field `path' */
   setpath(L, "cpath", LUA_CPATH, LUA_CPATH_DEFAULT); /* set field `cpath' */
+
   /* store config information */
   lua_pushliteral(L, LUA_DIRSEP "\n" LUA_PATHSEP "\n" LUA_PATH_MARK "\n"
                      LUA_EXECDIR "\n" LUA_IGMARK);
   lua_setfield(L, -2, "config");
+
   /* set field `loaded' */
   luaL_findtable(L, LUA_REGISTRYINDEX, "_LOADED", 2);
   lua_setfield(L, -2, "loaded");
+
   /* set field `preload' */
   lua_newtable(L);
   lua_setfield(L, -2, "preload");
+
+  /*
+  ** 注册全局函数require, module
+  */
   lua_pushvalue(L, LUA_GLOBALSINDEX);
   luaL_register(L, NULL, ll_funcs);  /* open lib into global table */
   lua_pop(L, 1);
+
   return 1;  /* return 'package' table */
 }
 

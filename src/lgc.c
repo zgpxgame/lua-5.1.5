@@ -142,6 +142,7 @@ size_t luaC_separateudata (lua_State *L, int all) {
       deadmem += sizeudata(gco2u(curr));
       markfinalized(gco2u(curr));
       *p = curr->gch.next;
+
       /* link `curr' at the end of `tmudata' list */
       if (g->tmudata == NULL)  /* list is empty? */
         g->tmudata = curr->gch.next = curr;  /* creates a circular list */
@@ -244,6 +245,8 @@ static void checkstacksizes (lua_State *L, StkId max) {
   int s_used = cast_int(max - L->stack);  /* part of stack in use */
   if (L->size_ci > LUAI_MAXCALLS)  /* handling overflow? */
     return;  /* do not touch the stacks */
+
+  /* 如果空间用了不到1/4就收缩一下 */
   if (4*ci_used < L->size_ci && 2*BASIC_CI_SIZE < L->size_ci)
     luaD_reallocCI(L, L->size_ci/2);  /* still big enough... */
   condhardstacktests(luaD_reallocCI(L, ci_used + 1));
@@ -281,33 +284,44 @@ static l_mem propagatemark (global_State *g) {
   gray2black(o);
   switch (o->gch.tt) {
     case LUA_TTABLE: {
+      /* gray = next */
       Table *h = gco2h(o);
       g->gray = h->gclist;
+
+	  /* 遍历mark引用的值，放入gray链表 */
       if (traversetable(g, h))  /* table is weak? */
         black2gray(o);  /* keep it gray */
       return sizeof(Table) + sizeof(TValue) * h->sizearray +
                              sizeof(Node) * sizenode(h);
     }
     case LUA_TFUNCTION: {
+      /* gray = next */
       Closure *cl = gco2cl(o);
       g->gray = cl->c.gclist;
+
       traverseclosure(g, cl);
       return (cl->c.isC) ? sizeCclosure(cl->c.nupvalues) :
                            sizeLclosure(cl->l.nupvalues);
     }
     case LUA_TTHREAD: {
+      /* gray = next */
       lua_State *th = gco2th(o);
       g->gray = th->gclist;
+
+	  /* link to grayagain */
       th->gclist = g->grayagain;
       g->grayagain = o;
-      black2gray(o);
+	  black2gray(o);
+      
       traversestack(g, th);
       return sizeof(lua_State) + sizeof(TValue) * th->stacksize +
                                  sizeof(CallInfo) * th->size_ci;
     }
     case LUA_TPROTO: {
+      /* gray = next */
       Proto *p = gco2p(o);
       g->gray = p->gclist;
+
       traverseproto(g, p);
       return sizeof(Proto) + sizeof(Instruction) * p->sizecode +
                              sizeof(Proto *) * p->sizep +
@@ -412,6 +426,7 @@ static GCObject **sweeplist (lua_State *L, GCObject **p, lu_mem count) {
   while ((curr = *p) != NULL && count-- > 0) {
     if (curr->gch.tt == LUA_TTHREAD)  /* sweep open upvalues of each thread */
       sweepwholelist(L, &gco2th(curr)->openupval);
+	/* 没有otherwhite标记时，也就是没有dead标记 */
     if ((curr->gch.marked ^ WHITEBITS) & deadmask) {  /* not dead? */
       lua_assert(!isdead(g, curr) || testbit(curr->gch.marked, FIXEDBIT));
       makewhite(g, curr);  /* make it white (for next cycle) */
@@ -453,9 +468,12 @@ static void GCTM (lua_State *L) {
     g->tmudata = NULL;
   else
     g->tmudata->gch.next = udata->uv.next;
+
   udata->uv.next = g->mainthread->next;  /* return it to `root' list */
   g->mainthread->next = o;
+
   makewhite(g, o);
+
   tm = fasttm(L, udata->uv.metatable, TM_GC);
   if (tm != NULL) {
     lu_byte oldah = L->allowhook;
@@ -637,7 +655,6 @@ void luaC_step (lua_State *L) {
 void luaC_fullgc (lua_State *L) {
   global_State *g = G(L);
   
-  /* 先把未完成的GC完成 */
   if (g->gcstate <= GCSpropagate) {
     /* reset sweep marks to sweep all elements (returning them to white) */
     g->sweepstrgc = 0;
@@ -649,6 +666,8 @@ void luaC_fullgc (lua_State *L) {
     g->gcstate = GCSsweepstring;
   }
   lua_assert(g->gcstate != GCSpause && g->gcstate != GCSpropagate);
+
+  /* 先把未完成的GC完成 */
   /* finish any pending sweep phase */
   while (g->gcstate != GCSfinalize) {
     lua_assert(g->gcstate == GCSsweepstring || g->gcstate == GCSsweep);
