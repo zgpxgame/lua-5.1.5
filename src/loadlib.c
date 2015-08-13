@@ -506,16 +506,22 @@ static int ll_require (lua_State *L) {
   }
   /* else must load it; iterate over available loaders */
   lua_getfield(L, LUA_ENVIRONINDEX, "loaders");
+
   if (!lua_istable(L, -1))
     luaL_error(L, LUA_QL("package.loaders") " must be a table");
   lua_pushliteral(L, "");  /* error message accumulator */
   for (i=1; ; i++) {
     lua_rawgeti(L, -2, i);  /* get a loader */
+
+	/* 当所有的loader都没法找到指定模块时，抛出错误信息 */
     if (lua_isnil(L, -1))
       luaL_error(L, "module " LUA_QS " not found:%s",
                     name, lua_tostring(L, -2));
+
+	/* 调用loader尝试加载模块 */
     lua_pushstring(L, name);
     lua_call(L, 1, 1);  /* call it */
+
     if (lua_isfunction(L, -1))  /* did it find module? */
       break;  /* module loaded successfully */
     else if (lua_isstring(L, -1))  /* loader returned error message? */
@@ -523,12 +529,18 @@ static int ll_require (lua_State *L) {
     else
       lua_pop(L, 1);
   }
+
+  /* 设置一个哨兵标记，防止直接或间接的循环require自己 */
   lua_pushlightuserdata(L, sentinel);
   lua_setfield(L, 2, name);  /* _LOADED[name] = sentinel */
+
   lua_pushstring(L, name);  /* pass name as argument to module */
   lua_call(L, 1, 1);  /* run loaded module */
+
   if (!lua_isnil(L, -1))  /* non-nil return? */
     lua_setfield(L, 2, name);  /* _LOADED[name] = returned value */
+
+  /* 模块有可能返回_LOADED[name]？，改成返回true */
   lua_getfield(L, 2, name);
   if (lua_touserdata(L, -1) == sentinel) {   /* module did not set a value? */
     lua_pushboolean(L, 1);  /* use true as result */
@@ -736,10 +748,9 @@ LUALIB_API int luaopen_package (lua_State *L) {
   lua_setfield(L, LUA_GLOBALSINDEX, "loadlib");
 #endif
 
-  /* 什么用? */
+  /* luaopen_package的环境设置为package，让这个包的函数环境都从此继承 */
   lua_pushvalue(L, -1);
   lua_replace(L, LUA_ENVIRONINDEX);
-
 
   /*
   ** 设置package表的loaders, path, cpath, config, loaded, preload等字段，这些
@@ -771,7 +782,7 @@ LUALIB_API int luaopen_package (lua_State *L) {
   lua_setfield(L, -2, "preload");
 
   /*
-  ** 注册全局函数require, module
+  ** 注册全局函数require, module，并且会继承lua_package的函数环境，即环境为package表
   */
   lua_pushvalue(L, LUA_GLOBALSINDEX);
   luaL_register(L, NULL, ll_funcs);  /* open lib into global table */

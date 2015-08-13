@@ -1,0 +1,182 @@
+
+lua_State {
+  preview (
+    #(
+      "thread top=", [$c.top-$c.base, i]
+    )
+  )
+  children (
+    #(
+      [raw members]: [$c,!],
+      globals: [$c.l_gt],
+      registry: [$c.l_G->l_registry],
+      stack size: [$c.top-$c.base, i],
+   stack:#array (
+        expr: $c.base[$i],
+        size: $c.top - $c.base,
+        base: 1
+      ),
+   callStack Size: $e.ci-$e.base_ci,
+   callStack:
+    #array (
+      expr: $e.ci[-$i],
+      size: $e.ci-$e.base_ci,
+    )
+    )
+  )
+}
+Node {
+  preview (
+    #( $c.i_key.tvk, " = ", $c.i_val )
+  )
+  children (
+    #(
+      key: $c.i_key.tvk,
+      val: $c.i_val,
+      #if( $c.i_key.nk.next != 0 ) (
+        #( next: $c.i_key.nk.next )
+      )
+    )
+  )
+}
+lua_TValue {
+  children (
+    #switch($c.tt)
+    #case 2 (             ; LUA_TLIGHTUSERDATA
+      ptr: #((const char*)($c.value.p))
+    )
+    #case 5 (               ; LUA_TTABLE
+      #(
+        [raw]: [$c,!],
+        array size: $c.value.gc->h.sizearray,
+        #array (
+          expr: $e.value.gc->h.metatable,
+          size: $e.value.gc->h.metatable != 0,
+        ): #( metatable: $e ),
+        #array (
+          expr: $c.value.gc->h.array[$i],
+          size: $c.value.gc->h.sizearray,
+          base: 1
+        ),
+        #array (
+          expr: #( $c.value.gc->h.node[$i], 2 ),
+          size: (1<<$c.value.gc->h.lsizenode),
+          base: 1
+        ): #( hash part: $e )
+      )
+    )
+    #case 6 (             ; LUA_TFUNCTION
+      #if ($c.value.gc->cl.c.isC) (
+        #(
+          env: $c.value.gc->cl.c.env,
+          #array (
+            expr: $e.value.gc->cl.c.upvalue[$i],
+            size: $e.value.gc->cl.c.nupvalues,
+          ): #( upvalues: $e )
+        )
+      ) #else (
+        #($c.value.gc->cl.l)
+      )
+    )
+    #case 7 (             ; LUA_TUSERDATA
+      #(
+        #array (
+          expr: $e.value.gc->u.uv.metatable,
+          size: $e.value.gc->u.uv.metatable != 0,
+        ): #( metatable: $e ),
+        env: $c.value.gc->u.uv.env,
+        ptr: #((const char*)((&$c.value.gc->u)+1)),
+        size: $c.value.gc->u.uv.len
+      )
+    )
+    #case 8 ( #($c.value.gc->th) )    ; LUA_TTHREAD
+  )
+  preview (
+    #switch($c.tt)
+    #case 0 ( "nil" )         ; LUA_TNIL
+    #case 1 (
+      #if ($c.value.b == 0) (
+        "false"
+      ) #else (
+        "true"
+      )
+    )
+    #case 2 (             ; LUA_TLIGHTUSERDATA
+      #($c.value.p, " lightuserdata") )
+    #case 3 (             ; LUA_TNUMBER
+      #("#", $c.value.n) )
+    #case 4  (             ; LUA_TRING
+     #( $c.value.gc->ts) )
+    #case 5 (   ; LUA_TTABLE
+      #( "table" )
+    )
+   ; #case 6 ( #($c.value.gc->cl) )     ; LUA_TFUNCTION
+    #case 6 (                ; LUA_TFUNCTION
+   #if ($c.value.gc->cl.c.isC) (
+    #($c.value.gc->cl)
+      ) #else (
+    #( [((const char *) (&($e.value.gc->cl.l.p->source->tsv)+1)),sb],"(" ,*($e.value.gc->cl.l.p->lineinfo),")" )
+      )
+  )
+    #case 7 ( #($c.value.gc->u) )   ; LUA_TUSERDATA
+    #case 8 ( #($c.value.gc->th) )    ; LUA_TTHREAD
+    #default ( "empty" )
+    )
+  )
+}
+Udata {
+  preview (
+    #( "userdata size=", $c.uv.len, " ptr=", #((void*)((&$c)+1)) )
+  )
+}
+CClosure {
+  preview (
+    $c.f
+  )
+}
+LClosure {
+  preview (
+  #([(const char *) (&($e.p->source->tsv)+1),sb] ,"(",*($e.p->lineinfo),")" )
+  )
+}
+Closure {
+  preview (
+    #if ($e.c.isC) ( #($e.c) )
+    #else ( #($e.value.gc->cl.l) )
+  )
+}
+Table {
+  children (
+      #(
+        [raw]: [$c,!],
+        [array size]: $c.sizearray,
+        #array (
+          expr: $e.metatable,
+          size: $e.metatable != 0,
+        ): #( metatable: $e ),
+        #array (
+          expr: $c.array[$i],
+          size: $c.sizearray,
+          base: 1
+        ),
+        #array (
+          expr: #( $c.node[$i], 2 ),
+          size: (1<<$c.lsizenode),
+          base: 1
+        ): #( key: $e )
+      )
+  )
+  preview (
+    #( "table" )
+  )
+}
+TString {
+  preview (
+    #("'", [(const char *) (&($e.tsv)+1),sb] )
+  )
+}
+CallInfo {
+ preview (
+  #( $e.func, ",",$e.func->value.gc->cl.l.p->lineinfo[$e.savedpc -$e.func->value.gc->cl.l.p->code-1] )
+ )
+}

@@ -1,0 +1,229 @@
+http://lua-users.org/lists/lua-l/2006-10/msg00491.html
+
+Subject: VC2005, autoexp.dat - examine the Lua stack in the debugger
+From: Glenn Maynard <glenn@...>
+Date: Mon, 16 Oct 2006 20:52:33 -0400
+VC's autoexp.dat allows custom visualizations for data types in the
+watch window.  A good description is at:
+
+   http://www.virtualdub.org/blog/pivot/entry.php?id=120
+
+Add a lua_State* to the watch window, and see the current stack,
+with most basic types.  Tables show metatables; string contents
+and numbers are shown; inside a C closure, upvalues are listed.
+One really nifty thing it does is resolve pointers, so you see
+the real names of C functions.
+
+The annoying: When when the Lua stack changes, it collapses the whole
+tree.  Tables are limited: it shows both the array part and the hash
+part, but I couldn't get #list to work on the hash part, so you have
+to open the hash entries and walk each next-> chain yourself.
+Workarounds welcome.
+
+(It would be nice if Lua types had less ambiguous names than "Node".
+Although these are private types, it still causes namespace problems
+for gadgets like this.)
+
+Examples:
+
+http://zewt.org/~glenn/lua-watch1.jpg - types, tables, threads
+http://zewt.org/~glenn/lua-watch2.jpg - call info, upvalues
+
+Back up "C:\Program Files\Microsoft Visual Studio 8\Common7\
+Packages\Debugger\autoexp.dat" and append to the end, before
+the [hresult] section.  I'll wait to put it on the wiki until
+I've used it a bit more.
+
+You may need to have Lua compiled directly into your application
+for this to work.  If you're using it as a library, the internal
+data structures may not be visible to VC's debugger.
+
+-- 
+Glenn Maynard
+; public domain by Glenn Maynard, with help from http://www.virtualdub.org/blog/pivot/entry.php?id=120
+
+lua_State {
+	preview (
+		#(
+			"thread top=", [$c.top-$c.base, i]
+		)
+	)
+
+	children (
+		#(
+			[raw members]: [$c,!],
+			stack size: [$c.top-$c.base, i],
+			globals: [$c.l_gt],
+			registry: [$c.l_G->l_registry],
+
+			#array (
+				expr: $e.ci->func,
+				size: $e.ci->func->tt != 0,
+			): #( call: $e ),
+
+			#array (
+				expr: $c.base[$i],
+				size: $c.top - $c.base,
+				base: 1
+			)
+		)
+	)
+	
+}
+
+Node {
+	preview (
+		#( $c.i_key.tvk, " = ", $c.i_val )
+	)
+	children (
+		#(
+			key: $c.i_key.tvk,
+			val: $c.i_val,
+			#if( $c.i_key.nk.next != 0 ) (
+				#( next: $c.i_key.nk.next )
+			)
+		)
+	)
+}
+
+lua_TValue {
+	children (
+		#switch($c.tt)
+		#case 2 (							; LUA_TLIGHTUSERDATA
+			ptr: #((const char*)($c.value.p))
+		)
+		#case 5 ( 							; LUA_TTABLE
+			#(
+				[raw]: [$c,!],
+				array size: $c.value.gc->h.sizearray,
+				#array (
+					expr: $e.value.gc->h.metatable,
+					size: $e.value.gc->h.metatable != 0,
+				): #( metatable: $e ),
+				
+				#array (
+					expr: $c.value.gc->h.array[$i],
+					size: $c.value.gc->h.sizearray,
+					base: 1
+				),
+				#array (
+					expr: #( $c.value.gc->h.node[$i], 2 ),
+					size: (1<<$c.value.gc->h.lsizenode),
+					base: 1
+				): #( hash part: $e )
+			)	
+		)
+		#case 6 (							; LUA_TFUNCTION
+			#if ($c.value.gc->cl.c.isC) (
+				#(
+					env: $c.value.gc->cl.c.env,
+					#array (
+						expr: $e.value.gc->cl.c.upvalue[$i],
+						size: $e.value.gc->cl.c.nupvalues,
+					): #( upvalues: $e )
+				)
+			) #else (
+				#($c.value.gc->cl.l)
+			)
+			
+		)
+		#case 7 (							; LUA_TUSERDATA
+			#(
+				#array (
+					expr: $e.value.gc->u.uv.metatable,
+					size: $e.value.gc->u.uv.metatable != 0,
+				): #( metatable: $e ),
+				env: $c.value.gc->u.uv.env,
+				ptr: #((const char*)((&$c.value.gc->u)+1)),
+				size: $c.value.gc->u.uv.len
+			)
+		)
+		#case 8 ( #($c.value.gc->th) )		; LUA_TTHREAD
+		
+	)
+
+	preview (
+		#switch($c.tt)
+		#case 0 ( "nil" )					; LUA_TNIL
+		#case 1 (
+			#if ($c.value.b == 0) (
+				"false"
+			) #else (
+				"true"
+			)
+		)
+		#case 2 (							; LUA_TLIGHTUSERDATA
+		  #($c.value.p, " lightuserdata") )
+		#case 3 (							; LUA_TNUMBER
+		  #("number=", $c.value.n) )
+		#case 4 (							; LUA_TSTRING
+		  #( $c.value.gc->ts) )
+		#case 5 ( 	; LUA_TTABLE
+			#( "table" )
+		)
+		
+		#case 6 ( #($c.value.gc->cl) )		; LUA_TFUNCTION
+		#case 7 ( #($c.value.gc->u) )		; LUA_TUSERDATA
+		#case 8 ( #($c.value.gc->th) )		; LUA_TTHREAD
+		#default ( "empty" )
+		)
+	)
+}
+
+Udata {
+	preview (
+		#( "userdata size=", $c.uv.len, " ptr=", #((void*)((&$c)+1)) )
+	)
+}
+
+CClosure {
+	preview (
+		$c.f
+	)
+}
+LClosure {
+	preview (
+		"Lua function"
+	)
+}
+
+Closure {
+	preview (
+		#if ($c.c.isC) ( #($c.c) )
+		#else ( #($c.value.gc->cl.l) )
+	)
+}
+
+Table {
+	children (
+			#(
+				[raw]: [$c,!],
+				[array size]: $c.sizearray,
+				#array (
+					expr: $e.metatable,
+					size: $e.metatable != 0,
+				): #( metatable: $e ),
+				
+				#array (
+					expr: $c.array[$i],
+					size: $c.sizearray,
+					base: 1
+				),
+				#array (
+					expr: #( $c.node[$i], 2 ),
+					size: (1<<$c.lsizenode),
+					base: 1
+				): #( key: $e )
+			)	
+	)
+
+	preview (
+		#( "table" )
+	)
+}
+
+TString {
+	preview (
+		#( (const char *) (&($c.tsv)+1) )
+	)
+}
