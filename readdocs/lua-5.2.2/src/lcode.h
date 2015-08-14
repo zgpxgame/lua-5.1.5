@@ -19,6 +19,7 @@
 */
 #define NO_JUMP (-1)
 
+#define hasjumps(e)	((e)->t != (e)->f)
 
 /*
 ** grep "ORDER OPR" if you change these enums  (ORDER OP)
@@ -78,6 +79,6 @@ LUAI_FUNC void luaK_infix (FuncState *fs, BinOpr op, expdesc *v);
 LUAI_FUNC void luaK_posfix (FuncState *fs, BinOpr op, expdesc *v1,
                             expdesc *v2, int line);
 LUAI_FUNC void luaK_setlist (FuncState *fs, int base, int nelems, int tostore);
-
+LUAI_FUNC void exp2reg (FuncState *fs, expdesc *e, int reg);
 
 #endif

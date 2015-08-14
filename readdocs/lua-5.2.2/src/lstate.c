@@ -12,6 +12,7 @@
 #define LUA_CORE
 
 #include "lua.h"
+#include "lauxlib.h"
 
 #include "lapi.h"
 #include "ldebug.h"
@@ -259,6 +260,77 @@ void luaE_freethread (lua_State *L, lua_State *L1) {
 }
 
 
+static int _zero(lua_State *L) { lua_pushnumber(L,0); return 1; }
+static int _nullop(lua_State *L) {return 0;}
+static int _nullitr(lua_State *L) { lua_pushcfunction(L,_nullop); return 1; }
+static int _safestring(lua_State *L) { lua_pushstring(L,"_SAFE"); return 1; }
+static void register_safe(lua_State *L) {
+  G(L)->safe=lua_newuserdata(L,0);
+  lua_createtable(L,0,6);
+#define nullmeta(fun) lua_pushcfunction(L,_nullop); lua_setfield(L,-2,fun);
+  lua_pushcfunction(L,_nullitr); lua_setfield(L,-2,"__pairs");
+  lua_pushcfunction(L,_nullitr); lua_setfield(L,-2,"__ipairs");
+  nullmeta("__index")
+  nullmeta("__newindex")
+  nullmeta("__call")
+  lua_pushcfunction(L,_safestring); lua_setfield(L,-2,"__tostring");
+  lua_pushcfunction(L,_zero); lua_setfield(L,-2,"__len");
+#undef nullmeta
+  lua_setmetatable(L,-2);
+  lua_setglobal(L,"_SAFE");
+}
+
+/* on the C side, it can be handy to know if you're dealing with the
+*  _SAFE user data.
+*/
+LUA_API int lua_issafe(lua_State * L, int idx) {
+  return lua_type(L,idx)==LUA_TUSERDATA && G(L)->safe == lua_touserdata(L,idx);
+}
+
+
+static int _MISSING(lua_State *L) {
+  lua_settop(L, 1);
+  if(lua_isnil(L,1)) {
+    lua_pushstring(L,"<expression>");
+    lua_replace(L,1);
+  }
+  return luaL_error(L, "missing required value: %s", luaL_tolstring(L, 1, NULL));
+}
+
+static int _MISSING_FIELD(lua_State *L) {
+  int top = lua_gettop(L);
+  if(!top) lua_settop(L, 1);
+
+  if(lua_isnil(L,1)) {
+    lua_pushstring(L,"<expression>");
+    lua_replace(L,1);
+  }
+
+  if(top>2) {
+    return luaL_error(L,"%s is missing required field: %s -> %s", 
+      luaL_tolstring(L, 1, NULL), 
+      luaL_tolstring(L, 3, NULL),
+      luaL_tolstring(L, 2, NULL) );
+  }
+
+  if(lua_isnil(L,2)) {
+    lua_pushstring(L,"<expression>");
+    lua_replace(L,2);
+  }
+
+  return luaL_error(L, "%s is missing required field: [%s]", 
+    luaL_tolstring(L, 1, NULL), 
+    luaL_tolstring(L, 2, NULL) );
+}
+
+static void register_missing(lua_State *L) {
+  lua_pushcfunction(L,_MISSING);
+  lua_setglobal(L,"_MISSING");
+
+  lua_pushcfunction(L,_MISSING_FIELD);
+  lua_setglobal(L,"_MISSING_FIELD");
+}
+
 LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud) {
   int i;
   lua_State *L;
@@ -308,6 +380,8 @@ LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud) {
   }
   else
     luai_userstateopen(L);
+  register_safe(L);
+  register_missing(L);
   return L;
 }
 
