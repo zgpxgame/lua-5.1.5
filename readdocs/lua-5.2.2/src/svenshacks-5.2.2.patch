@@ -1,0 +1,1167 @@
+Index: lcode.c
+===================================================================
+--- lcode.c	(lua 5.2.2)
++++ lcode.c	(8/22/2013)
+@@ -381,6 +381,9 @@
+ 
+ 
+ void luaK_dischargevars (FuncState *fs, expdesc *e) {
++  if( check_require_mask( e->k ) ) {
++    discharge_required_exp(fs,e);
++  }
+   switch (e->k) {
+     case VLOCAL: {
+       e->k = VNONRELOC;
+@@ -465,7 +468,7 @@
+ }
+ 
+ 
+-static void exp2reg (FuncState *fs, expdesc *e, int reg) {
++void exp2reg (FuncState *fs, expdesc *e, int reg) {
+   discharge2reg(fs, e, reg);
+   if (e->k == VJMP)
+     luaK_concat(fs, &e->t, e->u.info);  /* put this jump in `t' list */
+Index: lcode.h
+===================================================================
+--- lcode.h	(lua 5.2.2)
++++ lcode.h	(8/22/2013)
+@@ -19,6 +19,7 @@
+ */
+ #define NO_JUMP (-1)
+ 
++#define hasjumps(e)	((e)->t != (e)->f)
+ 
+ /*
+ ** grep "ORDER OPR" if you change these enums  (ORDER OP)
+@@ -78,6 +79,6 @@
+ LUAI_FUNC void luaK_posfix (FuncState *fs, BinOpr op, expdesc *v1,
+                             expdesc *v2, int line);
+ LUAI_FUNC void luaK_setlist (FuncState *fs, int base, int nelems, int tostore);
++LUAI_FUNC void exp2reg (FuncState *fs, expdesc *e, int reg);
+ 
+-
+ #endif
+Index: lopcodes.c
+===================================================================
+--- lopcodes.c	(lua 5.2.2)
++++ lopcodes.c	(8/22/2013)
+@@ -102,6 +102,7 @@
+  ,opmode(0, 0, OpArgU, OpArgU, iABC)		/* OP_SETLIST */
+  ,opmode(0, 1, OpArgU, OpArgN, iABx)		/* OP_CLOSURE */
+  ,opmode(0, 1, OpArgU, OpArgN, iABC)		/* OP_VARARG */
++ ,opmode(0, 1, OpArgK, OpArgN, iABx)		/* OP_GETGLOBAL */
+  ,opmode(0, 0, OpArgU, OpArgU, iAx)		/* OP_EXTRAARG */
+ };
+ 
+Index: lopcodes.h
+===================================================================
+--- lopcodes.h	(lua 5.2.2)
++++ lopcodes.h	(8/22/2013)
+@@ -221,6 +221,8 @@
+ 
+ OP_VARARG,/*	A B	R(A), R(A+1), ..., R(A+B-2) = vararg		*/
+ 
++OP_GETGLOBAL, /*	A C	R(A) := GLOBAL[Kst(Bx)]				*/
++
+ OP_EXTRAARG/*	Ax	extra (larger) argument for previous opcode	*/
+ } OpCode;
+ 
+Index: lparser.c
+===================================================================
+--- lparser.c	(lua 5.2.2)
++++ lparser.c	(8/22/2013)
+@@ -4,7 +4,162 @@
+ ** See Copyright Notice in lua.h
+ */
+ 
++/*           sven's notes on register maintenance
++**
++** so, in my experience, the hard thing about writing parser
++** patches is understanding the rather odd dance between
++** expression parsing and register management.
++**
++** if you're going to try writing a patch yourself, i'd start
++** by teaching yourself some basics about lua's virtual
++** machine.  in particular, read lopcodes.h, and make sure you
++** under what RK(), Kst() and ISK() mean.  
++**
++** then read parser.h, and take a look at the glorious mess
++** that is the expdesc structure.  there's an important hack
++** here, which is that expressions of type VRELOCABLE are, by
++** convention, references to instructions with argument A left
++** undefined.  thus, they can be "discharged" into registers by
++** calling SETARG_A() -- see lcode.c : discharge2reg ().
++**
++** then, before messing with any code, edit llimits.h so that
++** the lua_assert() macro is enabled inside your own debugging
++** builds.  among other things, a nontrivial lua_assert() will
++** enable a collection of sanity checks related to register
++** management.  if you're a neophyte parser hacker, you want
++** these checks.
++**
++** what follows are  my own notes on register maintenance --
++** depending on what you're trying to do, they may or may not
++** prove enlightening.  beyond that, i wish you luck :-)
++**
++**              "discharging" expressions
++**  
++** "discharging" takes an expression of arbitrary type, and
++** converts it to one having particular properties.
++**
++** the lowest-level discharge function is discharge2vars (),
++** which converts an expression into one of the two "result"
++** types; either a VNONRELOC or a VRELOCABLE.
++** 
++** if the variable in question is a VLOCAL, discharge2vars 
++** will simply change the stored type to VNONRELOC.
++**
++** much of lcode.c assumes that the it will be working with
++** discharged expressions.  in particular, it assumes that if
++** it encounters a VNONRELOC expression, and e->info < nactvar,
++** then the register referenced is a local, and therefore
++** shouldn't be implicitly freed after use.
++**
++**                local variables
++**
++** however, the relationship between nactvar and locals is
++** actually somewhat more complex -- as each local variable
++** appearing in the code has a collection of data attached to
++** it, data that's being accumulated and changed as the lexer
++** moves through the source.
++**
++** fs->nlocvars stores the total number of named locals inside 
++** the function -- recall that different local variables are
++** allowed to overlap the same register, depending on which
++** are in-scope at any particular time.
++**
++** the list of locals that are active at any given time is
++** stored in ls->dyd -- a vector of stack references that grows
++** or shrinks as locals enter or leave scope.
++**
++** managing the lifetime of local variables involves several
++** steps.  first, new locals are declared using new_localvar. 
++** this sets their names and creates new  references in dyd. 
++** soon thereafter, the parser is expected  to call
++** adjustlocalvar(ls,nvars), with nvars set to the number of
++** new locals.  adjustlocalvar increments fs->nactvar by nvars,
++** and marks the startpc's of all the locals.
++**
++** note that neither new_localvar or adjustlocalvar ensures
++** that anything is actually inside the registers being labeled
++** as locals.  failing to initialize said registers is an easy
++** way to write memory access bugs (peter's original table
++** unpack patch includes one such).  
++**
++** after adjustlocalvar is called, luaK_exp2nextreg() will no
++** longer place new data inside the local's registers -- as
++** they're no longer part of the temporary register stack.
++**
++** when the time comes to deactivate locals, that's done via
++** removevars(tolevel).  tolevel is assumed to contain nactvars
++** as it existed prior to entering the previous block.  thus,
++** the number of locals to remove should simply be
++** fs->nactvar-tolevel.  removevars(tolevel) will decrement
++** nactvars down to tolevel. it also shrinks the dyd vector,
++** and marks the endpc's of all the removed locals.  
++**
++** except in between new_localvar and adjustlocalvar calls, i
++** believe that
++**		fs->ls->dyd->actvar.n - fs->firstlocal == fs->nactvar
++**
++**                 temporary registers
++**
++** freereg is used to manage the temporary register stack --
++** registers between [fs->nactvars,fs->freereg) are assumed to
++** belong to expressions currently being stored by the parser.
++**
++** fs->freereg is incremented explicitly by calls to
++** luaK_reserveregs, or implicitly, inside luaK_exp2nextreg.
++** it's decremented whenever a freereg(r) is called on a
++** register in the temporary stack (i.e., a register for which
++** r >= fs->nactvar).
++**
++** the temporary register stack is cleared when leaveblock() is
++** called, by setting fs->freereg=fs->nactvar.  it's  also
++** partially cleared in other places -- for example,  inside
++** the evaluation of table constructors.
++**
++** note that freereg just pops the top of the stack if r does
++** not appear to be a local -- thus it doesn't necessarily,
++** free r. one of the important sanity checks that you'll get
++** by enabling lua_assert() checks that the register being
++** freed is also the top of the stack.
++**
++** when writing parser patches, it's your job to ensure  that
++** the registers that you've reserved are freed in an
++** appropriate order.
++**
++** when a VINDEXED expression is discharged,  freereg() will be
++** called on both the table and the index register.  otherwise,
++** freereg is only called from freeexp() -- which gets
++** triggered anytime an expression has been "used up";
++** typically, anytime it's been transformed into another
++** expression.
++**
++**         the compound assignment patch
++**
++** the compound assignment patch creates an unusual situation,
++** because a line like:
++**    t.b.b += a+1
++**
++** will require first storing `t.b` in a temporary register,
++** then referencing it twice -- once when evaluating
++** `t.b.b+a+1`, and then a second time, when performing the
++** assignment.  however, the standard expression discharging
++** conventions imply that the temporary value containing t.b
++** be will be freed during the evaluation of `t.b.b+a+1`.
++**
++** thus, we need a way of somehow preserving any registers
++** being used by the left hand side of the assignment
++** expression.  the patch does this by simply promoting
++** all such temporary registers to locals.
++**
++** (i've also mannaged to make a working version of the patch
++** by directly adjusting fs->nactvars, and then changing
++** searchvar () to reference ls->dyd rather than fs->nactvars. 
++** that approach also seems to work, and does have some small
++** memory and performance advantages.  though probably not
++** enough to justify its inelegance.)
++**
++*/
+ 
++
+ #include <string.h>
+ 
+ #define lparser_c
+@@ -192,7 +347,7 @@
+ }
+ 
+ #define new_localvarliteral(ls,v) \
+-	new_localvarliteral_(ls, "" v, (sizeof(v)/sizeof(char))-1)
++    new_localvarliteral_(ls, "" v, (sizeof(v)/sizeof(char))-1)
+ 
+ 
+ static LocVar *getlocvar (FuncState *fs, int i) {
+@@ -704,10 +859,42 @@
+   cc->tostore++;
+ }
+ 
++/* 
++*
++* the table form of the stringification patch. 
++* transforms {..f} to {f=f}.
++* like the function shorthand, it's the semantic info left after we've parsed the expression that
++* is used as the key, so, something like {..f().y} --> {y=f().y}.
++*
++*/
++static void table_shorthand (LexState *ls, struct ConsControl *cc) {
++  expdesc key, val;
++  FuncState *fs = ls->fs;
++  int reg = ls->fs->freereg;
++  int rkkey;
++  checklimit(fs, cc->nh, MAX_INT, "items in a constructor");
++  cc->nh++;
++  expr(ls, &val);
++  if(ls->t.seminfo.ts) {
++    codestring(ls, &key, ls->t.seminfo.ts);
++  }
++  else {
++    init_exp(&key, VKNUM, 0);
++    key.u.nval = ls->t.seminfo.r;
++  }
++  rkkey = luaK_exp2RK(fs, &key);
++  luaK_codeABC(fs, OP_SETTABLE, cc->t->u.info, rkkey, luaK_exp2RK(fs, &val));
++  fs->freereg = reg;  /* free registers */
++}
+ 
+ static void field (LexState *ls, struct ConsControl *cc) {
+   /* field -> listfield | recfield */
+   switch(ls->t.token) {
++    case TK_CONCAT: {
++      luaX_next(ls);
++      table_shorthand(ls,cc);
++      break;
++    }
+     case TK_NAME: {  /* may be 'listfield' or 'recfield' */
+       if (luaX_lookahead(ls) != '=')  /* expression? */
+         listfield(ls, cc);
+@@ -807,13 +994,37 @@
+ }
+ 
+ 
++/* this implements the function form of the stringification hack.
++**  it turns foo(..bar) into foo("bar",bar). */
++static void dup_expr(LexState *ls, expdesc *v, int *np) {
++  int dup = testnext(ls,TK_CONCAT); 
++  FuncState *fs = ls->fs;
++  int reg;
++  if(dup) {
++    reg=fs->freereg;
++    luaK_reserveregs(fs, 1);
++  }
++  expr(ls,v);
++  if(dup) {
++    expdesc varname;
++    if(ls->t.seminfo.ts) {
++      codestring(ls, &varname, ls->t.seminfo.ts);
++    } else {
++      init_exp(&varname, VKNUM, 0);
++      varname.u.nval = ls->t.seminfo.r;
++    }
++    exp2reg(fs, &varname, reg);
++    (*np)++;
++  }
++}
++
+ static int explist (LexState *ls, expdesc *v) {
+   /* explist -> expr { `,' expr } */
+   int n = 1;  /* at least one expression */
+-  expr(ls, v);
++  dup_expr(ls, v,&n);
+   while (testnext(ls, ',')) {
+     luaK_exp2nextreg(ls->fs, v);
+-    expr(ls, v);
++    dup_expr(ls, v,&n);
+     n++;
+   }
+   return n;
+@@ -866,7 +1077,126 @@
+ 
+ 
+ 
++/*
++** "Global References" are a semantic inspired by, but not
++** quite identical to, the _ENV upvalue introduced in 5.2. 
++** When the parser evaluates a global reference named foo, it
++** will first check for any locals or upvalues named foo. 
++** However, if it fails to find one, it will fall back on the
++** definition of foo stored in the global table, rather than
++** indexing _ENV.foo.
++*/
++static void global_reference(LexState *ls, expdesc *v, const char * name) {
++  FuncState *fs=ls->fs;
++  TString * varname=  luaX_newstring ( ls, name, strlen(name) );
++  if( singlevaraux(fs, varname, v, 1) == VVOID) {
++    expdesc key;
++    codestring(ls, &key, varname);
++    init_exp(v,VRELOCABLE, luaK_codeABx(fs,OP_GETGLOBAL, 0,key.u.info ) );
++  }
++}
+ 
++/* 
++ * if there's a natural string associated with this expression,
++ * store it in s. 
++ */
++static void exp_to_nil_or_string(LexState *ls, expdesc *v, expdesc *s) {
++  FuncState *fs = ls->fs;
++  init_exp(s, VNIL, 0);	
++  switch(v->k) {
++  case VLOCAL:
++    codestring(ls, s, getlocvar(fs, v->u.info)->varname);
++    break;
++  case VUPVAL:
++    codestring(ls, s, fs->f->upvalues[v->u.info].name);
++    break;
++  case VINDEXED:
++    if(ISK(v->u.ind.idx)) {
++      init_exp(s, VK, INDEXK(v->u.ind.idx));
++      break;
++    }
++  }
++}
++
++
++/* the semantic i'm implementing here is 
++**
++**    a!.b - > (a.b or _MISSING("b","a") )
++**
++** one can make a reasonable argument that 'or' is not really
++** the right trigger for a missing error, as if a.b=false, it's
++** not really "missing".
++**
++** i've made some attempts to code up the missing semantic in
++** such a way that it triggers only on nil, but, such
++** implementations get ugly.  to make the approach work, we'd
++** need to emit the necessary raw bytecode ourselves.  that
++** would mean giving up on most of the optimizations buried 
++** inside the implementation of OP_OR.  it would also mean
++** taking responsibility for managing the fs->freereg and
++** fs->nactvar counters; something that i'm not entirely sure
++** how to do properly.  there's a lot of complications that
++** seem to come up when wrapping a function call in an OR-like
++** bycode chunk.
++**
++** if you decide you really must have a version of the missing
++** semantic that triggers on nil, but not false, i think the
++** easiest and safest way to do it is to extend the VM to have
++** two additional opcodes, OP_TESTNIL, and OP_TESTSETNIL, which
++** work exactly like OP_TEST and OP_TESTSET, with the exception
++** that they trigger on ttisnil  rather than l_isfalse.
++**
++** given such opcodes, it would be straightforward to implement
++** an OP_NILOR, a binary operation would act exactly like
++** OP_OR, but, only trigger on nil.
++**
++** personally, i don't really mind having the error trigger on
++** false.  in the case of the ? semantic, i think a standard 
++** 'or' makes more sense than a 'nil_or', so using a similar
++** trigger for the ! semantic keeps the behaviors of  both
++** semantics symmetric.  ultimately, it's just a convenience
++** shorthand, and extending the VM with 2 new opcodes to make
++** it work slightly better seems a bit silly.
++*/
++static void exp_or_missing(LexState *ls, expdesc *v, expdesc * table, expdesc *key, expdesc *varname, int line) {
++  FuncState *fs = ls->fs;
++  expdesc f;
++  int base;
++  int nparams=1;
++  if(key) nparams++;
++  if(varname) nparams++; 
++
++
++
++  enterlevel(ls);
++  luaK_infix(fs,OPR_OR,v);
++
++  global_reference(ls,&f, key ? "_MISSING_FIELD" : "_MISSING");
++  luaK_exp2nextreg(fs, &f);
++  
++  // push the table string
++  luaK_exp2nextreg(fs, table);
++
++  if(key) {
++    luaK_exp2nextreg(fs, key);
++  }
++
++  if(varname) {
++    luaK_exp2nextreg(fs, varname);
++  }
++
++  lua_assert(f.k == VNONRELOC);
++  base = f.u.info;
++
++  init_exp(&f, VCALL, luaK_codeABC(fs, OP_CALL, base, nparams+1, 2));
++  luaK_fixline(fs, line);
++  fs->freereg = base+1;
++
++  luaK_posfix(fs, OPR_OR, v, &f, line);
++  leavelevel(ls);
++
++}
++
+ /*
+ ** {======================================================================
+ ** Expression parsing
+@@ -874,6 +1204,9 @@
+ */
+ 
+ 
++/* hooks for the 't!.v', 't![k]' and plain 't!' semantics. */
++
++
+ static void primaryexp (LexState *ls, expdesc *v) {
+   /* primaryexp -> NAME | '(' expr ')' */
+   switch (ls->t.token) {
+@@ -895,35 +1228,152 @@
+   }
+ }
+ 
++void discharge_required_exp(FuncState *fs, expdesc *e) {
++  expdesc name;
++  e->k = clear_require_mask(e->k);
++  exp_to_nil_or_string(fs->ls,e,&name);
++  exp_or_missing(fs->ls, e, &name, NULL, NULL, fs->ls->linenumber);
++}
+ 
++
++static void checked_field_sel(LexState *ls, expdesc *v, expdesc *key) {
++  FuncState *fs = ls->fs;
++  expdesc table;
++  //v->k|=VREQUIRED_MASK;
++  v->k = clear_require_mask(v->k);
++  exp_to_nil_or_string(ls,v,&table);
++  discharge_required_exp(fs,v);
++  luaK_exp2anyregup(fs, v);
++  luaK_indexed(fs, v, key);
++
++  exp_or_missing(ls,v,&table, key, NULL, ls->linenumber);
++}
++  
++static TString * newstring(LexState *ls, const char * str) {
++  return luaX_newstring(ls, str, strlen(str));
++}
++
++static void checked_table_index(LexState *ls, expdesc *v) {
++  FuncState *fs = ls->fs;
++  int sendvar=0;
++  expdesc key, keyval, varname, table;
++  v->k = clear_require_mask(v->k);
++  luaX_next(ls);
++  exp_to_nil_or_string(ls,v,&table);
++  discharge_required_exp(fs,v);
++
++  luaK_exp2anyregup(fs, v);
++  expr(ls, &key);
++  keyval=key;
++  init_exp(&keyval, VNIL, 0);	
++
++  if(!hasjumps(&key)) switch(key.k) {
++
++  case VLOCAL:
++    sendvar=1;
++    codestring(ls, &varname, getlocvar(fs, key.u.info)->varname);
++    keyval=key;
++    break;
++  case VUPVAL:
++    sendvar=1;
++    codestring(ls, &varname, fs->f->upvalues[key.u.info].name);
++    keyval=key;
++    break;
++  case VINDEXED:
++    if( ISK(key.u.ind.idx) ) {
++      sendvar=1;
++      init_exp(&varname,VK,INDEXK(key.u.ind.idx));
++    } 
++    break;
++
++   case VNIL:
++   case VTRUE:
++   case VFALSE:
++   case VKNUM:
++   case VK:  {
++      keyval=key;
++      break;
++    }
++   case VCALL: {
++     codestring(ls, &keyval, newstring ( ls, "(function call)") );
++     break;
++   }
++
++
++  }
++
++  luaK_exp2val(ls->fs, &key);
++  checknext(ls, ']');
++  luaK_indexed(fs, v, &key);
++
++
++  exp_or_missing(ls,v,&table,&keyval, sendvar ? &varname : NULL, ls->linenumber);
++}
++
++static void throw_newline_error(LexState *ls) {
++  luaX_syntaxerror(ls, "dangerous formatting: '(' starts a new line inside a multi-call statement.");
++}
++
+ static void suffixedexp (LexState *ls, expdesc *v) {
+   /* suffixedexp ->
+        primaryexp { '.' NAME | '[' exp ']' | ':' NAME funcargs | funcargs } */
+   FuncState *fs = ls->fs;
+-  int line = ls->linenumber;
++  int line = ls->linenumber, funcall=0, danger=0;
+   primaryexp(ls, v);
+   for (;;) {
+     switch (ls->t.token) {
+-      case '.': {  /* fieldsel */
+-        fieldsel(ls, v);
++      case '?': { /* safe navigation */
++        expdesc safe;
++        luaX_next(ls);
++        enterlevel(ls);
++        luaK_infix(fs,OPR_OR,v);
++        global_reference(ls,&safe,"_SAFE");
++        luaK_posfix(fs, OPR_OR, v, &safe, line);
++        leavelevel(ls);
+         break;
+       }
+-      case '[': {  /* `[' exp1 `]' */
+-        expdesc key;
+-        luaK_exp2anyregup(fs, v);
+-        yindex(ls, &key);
+-        luaK_indexed(fs, v, &key);
++      case '!': /* required fields */
++        luaX_next(ls);
++        v->k = add_require_mask(v->k);
+         break;
+-      }
++
++      case '.':   /* fieldsel */
++        if(check_require_mask(v->k)) {
++          expdesc key;
++          luaX_next(ls); 
++          checkname(ls, &key);
++          checked_field_sel(ls,v,&key);
++        } else {
++          fieldsel(ls, v);
++        }
++        break;
++      
++      case '[':   /* `[' exp1 `]' */
++        if(check_require_mask(v->k)) {
++          checked_table_index(ls,v);
++        } else {
++          expdesc key;
++          luaK_exp2anyregup(fs, v);
++          yindex(ls, &key);
++          luaK_indexed(fs, v, &key);
++        }
++        break;
++      
+       case ':': {  /* `:' NAME funcargs */
+         expdesc key;
+         luaX_next(ls);
++        if(danger && funcall) throw_newline_error(ls);
++        funcall=1;
+         checkname(ls, &key);
+         luaK_self(fs, v, &key);
+         funcargs(ls, v, line);
+         break;
+       }
+-      case '(': case TK_STRING: case '{': {  /* funcargs */
++      case '(': 
++        if(ls->linenumber != ls->lastline) danger=1; 
++      case TK_STRING: case '{': {  /* funcargs */
++        if(danger && funcall) throw_newline_error(ls);
++        funcall=1;
+         luaK_exp2nextreg(fs, v);
+         funcargs(ls, v, line);
+         break;
+@@ -1094,7 +1544,7 @@
+ ** assignment
+ */
+ struct LHS_assign {
+-  struct LHS_assign *prev;
++  struct LHS_assign *prev, *next;
+   expdesc v;  /* variable (global, local, upvalue, or indexed) */
+ };
+ 
+@@ -1132,22 +1582,210 @@
+   }
+ }
+ 
++enum {
++    NORMAL_ASSIGNMENT,
++    FROM_ASSIGNMENT,
++    COMPOUND_ASSIGNMENT
++};
+ 
+-static void assignment (LexState *ls, struct LHS_assign *lh, int nvars) {
++static void getfrom (LexState *ls, expdesc *v, expdesc *e) {
++  expdesc key;
++  if (v->k == VLOCAL)
++    codestring(ls, &key, getlocvar(ls->fs, v->u.info)->varname);
++  else if (v->k == VUPVAL)
++    codestring(ls, &key, ls->fs->f->upvalues[v->u.info].name);
++  else if (v->k == VINDEXED) {
++    lua_assert(ISK(v->u.ind.idx));
++    init_exp(&key, VK, INDEXK(v->u.ind.idx));
++  }
++  else
++    check_condition(ls, vkisvar(v->k),
++                        "syntax error in " LUA_QL("in") " vars");
++  luaK_indexed(ls->fs, e, &key);
++}
++
++
++static int compound_assignment(LexState *ls, struct LHS_assign *lh, int nvars) {
++  BinOpr op = getbinopr(ls->t.token);
++  FuncState * fs=ls->fs;
++  int tolevel=fs->nactvar;
++  int old_free=fs->freereg;
++  expdesc e,infix;
++  double inc=0;
++  int nexps=0,i;
++  int line=ls->linenumber;
++  struct LHS_assign * assign=lh;
++  while(assign->prev) assign=assign->prev;
++  luaX_next(ls);
++
++  { /* create temporary local variables to lock up any registers needed 
++       by VINDEXED lvalues. */
++     lu_byte top=fs->nactvar;
++     struct LHS_assign * a = lh;
++     int nextra;
++     while(a) {
++       expdesc * v= &a->v;
++       /* protect both the table and index result registers,
++       ** ensuring that they won't be overwritten prior to the 
++       ** storevar calls. */
++       if(v->k==VINDEXED) {
++         if( !ISK( v->u.ind.t ) && v->u.ind.t  >= top) {
++           top= v->u.ind.t+1;
++         }
++         if( !ISK( v->u.ind.idx ) && v->u.ind.idx >= top) {
++           top= v->u.ind.idx+1;
++         }
++       }
++       a=a->prev;
++     }
++     nextra=top-fs->nactvar;
++     if(nextra) {
++       for(i=0;i<nextra;i++) {
++         new_localvarliteral(ls,"(temp)");
++       }
++       adjustlocalvars(ls,nextra);
++     }   
++  }
++  if(op==OPR_ADD && testnext(ls,'+')) {
++    /* the increment case.  supporting this is a bit silly, but
++    ** also fairly simple.
++    ** note that `a,b,c++` increments a,b, and c. */
++    for(i=0;i<nvars;i++) {
++      init_exp(&e, VKNUM, 0);
++      e.u.nval = 1;
++      infix=assign->v;
++      luaK_infix(fs,op,&infix);
++      luaK_posfix(fs, op, &infix, &e, line);
++      luaK_storevar(fs, &assign->v, &infix);
++      assign=assign->next;
++    }
++    goto done;
++  }
++  checknext(ls, '=');
++  do {
++    if(!assign) {
++      luaX_syntaxerror(ls,"too many right hand side values in compound assignment");
++    }
++    infix=assign->v;
++    luaK_infix(fs,op,&infix);
++    expr(ls, &e);
++    if(ls->t.token == ',') {
++      luaK_posfix(fs, op, &infix, &e, line);
++      luaK_storevar(fs, &assign->v, &infix);
++      assign=assign->next;
++      nexps++;
++    }
++  } while (testnext(ls, ','));
++
++  if(nexps+1==nvars ) {
++      luaK_posfix(fs, op, &infix, &e, line);
++      luaK_storevar(fs, &lh->v, &infix);
++  } else if( hasmultret(e.k) ) {
++    adjust_assign(ls, nvars-nexps, 1, &e);
++    assign=lh;
++    {
++      int top=ls->fs->freereg-1;
++      int first_top=top;
++      for(i=0;i<nvars-nexps;i++) {
++        infix=assign->v;
++        luaK_infix(fs,op,&infix);
++
++        init_exp(&e, VNONRELOC, top--); 
++        luaK_posfix(fs, op, &infix, &e, line);
++        luaK_storevar(fs, &assign->v, &infix);
++        assign=assign->prev;
++      }
++    }
++  } else {
++    luaX_syntaxerror(ls,"insufficient right hand variables in compound assignment.");
++  }
++
++  done:
++  removevars(fs,tolevel);
++  if(old_free<fs->freereg) {
++    fs->freereg=old_free;
++  }
++  return COMPOUND_ASSIGNMENT;
++}
++
++
++static int get_table_unpack(LexState *ls, struct LHS_assign *lh, expdesc * e) {
++  lu_byte from_var,tested;
++  expdesc tablename;
++  luaX_next(ls);
++  new_localvarliteral(ls, "(in)");
++  suffixedexp(ls, e);
++  tested=check_require_mask(e->k);
++  if(tested) {
++      e->k=clear_require_mask(e->k);
++      exp_to_nil_or_string(ls,e,&tablename);
++      discharge_required_exp(ls->fs,e);
++  }
++  luaK_exp2nextreg(ls->fs, e);
++  from_var = ls->fs->nactvar;
++  adjustlocalvars(ls, 1);
++  luaK_setoneret(ls->fs, e);  /* close last expression */
++  while(lh) {
++    expdesc key, keyval;
++    expdesc * v = &lh->v;
++    switch(v->k) {
++      case VLOCAL:
++        codestring(ls, &key, getlocvar(ls->fs, v->u.info)->varname);
++        break;
++      case VUPVAL:
++        codestring(ls, &key, ls->fs->f->upvalues[v->u.info].name);
++        break;
++      case VINDEXED:
++        lua_assert(ISK(v->u.ind.idx));
++        init_exp(&key, VK, INDEXK(v->u.ind.idx));
++        break;
++      default:
++        luaX_syntaxerror( ls, "syntax error in " LUA_QL("in") " vars" );
++    }
++    keyval=key;
++    luaK_indexed(ls->fs, e, &key);
++
++    if(tested) {
++      expdesc t=tablename;
++      exp_or_missing(ls,e,&t,&keyval,NULL,ls->linenumber);
++    }
++
++    luaK_storevar(ls->fs, v, e);
++    lh=lh->prev;
++    if(lh) init_exp(e, VNONRELOC, ls->fs->freereg-1); 
++  }
++  removevars(ls->fs,from_var);
++  return FROM_ASSIGNMENT;  /* avoid default */
++}
++
++static int assignment (LexState *ls, struct LHS_assign *lh, int nvars) {
+   expdesc e;
+   check_condition(ls, vkisvar(lh->v.k), "syntax error");
+   if (testnext(ls, ',')) {  /* assignment -> ',' suffixedexp assignment */
+     struct LHS_assign nv;
++    int assignment_type;
+     nv.prev = lh;
++    nv.next = NULL;
++    lh->next = &nv;
+     suffixedexp(ls, &nv.v);
+     if (nv.v.k != VINDEXED)
+       check_conflict(ls, lh, &nv.v);
+     checklimit(ls->fs, nvars + ls->L->nCcalls, LUAI_MAXCCALLS,
+                     "C levels");
+-    assignment(ls, &nv, nvars+1);
++    assignment_type = assignment(ls, &nv, nvars+1);
++    if(assignment_type) return assignment_type;
+   }
+   else {  /* assignment -> `=' explist */
+     int nexps;
++    switch(ls->t.token) {
++      case TK_IN: /* hook for table unpack */
++        return get_table_unpack(ls,lh,&e);
++     
++      /* hook for compound_assignment */
++      case '+': case '-': case '*': case '/': case TK_CONCAT:
++        return compound_assignment(ls,lh,nvars);
++    }
++
+     checknext(ls, '=');
+     nexps = explist(ls, &e);
+     if (nexps != nvars) {
+@@ -1158,11 +1796,12 @@
+     else {
+       luaK_setoneret(ls->fs, &e);  /* close last expression */
+       luaK_storevar(ls->fs, &lh->v, &e);
+-      return;  /* avoid default */
++      return NORMAL_ASSIGNMENT;  /* avoid default */
+     }
+   }
+   init_exp(&e, VNONRELOC, ls->fs->freereg-1);  /* default assignment */
+   luaK_storevar(ls->fs, &lh->v, &e);
++  return NORMAL_ASSIGNMENT;
+ }
+ 
+ 
+@@ -1240,7 +1879,7 @@
+   whileinit = luaK_getlabel(fs);
+   condexit = cond(ls);
+   enterblock(fs, &bl, 1);
+-  checknext(ls, TK_DO);
++  testnext(ls, TK_DO);
+   block(ls);
+   luaK_jumpto(fs, whileinit);
+   check_match(ls, TK_END, TK_WHILE, line);
+@@ -1286,7 +1925,7 @@
+   FuncState *fs = ls->fs;
+   int prep, endfor;
+   adjustlocalvars(ls, 3);  /* control variables */
+-  checknext(ls, TK_DO);
++  testnext(ls, TK_DO);
+   prep = isnum ? luaK_codeAsBx(fs, OP_FORPREP, base, NO_JUMP) : luaK_jump(fs);
+   enterblock(fs, &bl, 0);  /* scope for declared variables */
+   adjustlocalvars(ls, nvars);
+@@ -1379,7 +2018,7 @@
+   int jf;  /* instruction to skip 'then' code (if condition is false) */
+   luaX_next(ls);  /* skip IF or ELSEIF */
+   expr(ls, &v);  /* read condition */
+-  checknext(ls, TK_THEN);
++  testnext(ls, TK_THEN);
+   if (ls->t.token == TK_GOTO || ls->t.token == TK_BREAK) {
+     luaK_goiffalse(ls->fs, &v);  /* will jump to label if condition is true */
+     enterblock(fs, &bl, 0);  /* must enter block before 'goto' */
+@@ -1440,6 +2079,47 @@
+     new_localvar(ls, str_checkname(ls));
+     nvars++;
+   } while (testnext(ls, ','));
++  if(testnext(ls,TK_IN)) {
++    int tested = 0;
++    expdesc table;
++    lu_byte from_var;
++    int regs = ls->fs->freereg;
++    int vars = ls->fs->nactvar;
++    luaK_reserveregs(ls->fs, nvars);
++    suffixedexp(ls, &e);
++    adjustlocalvars(ls, nvars);
++    new_localvarliteral(ls, "(in)");
++    if( check_require_mask(e.k) ) {
++      exp_to_nil_or_string(ls,&e,&table);
++      tested=1;
++    }
++    luaK_exp2nextreg(ls->fs, &e);
++    from_var = ls->fs->nactvar;
++    adjustlocalvars(ls, 1);
++    luaK_setoneret(ls->fs, &e);  /* close last expression */
++    for (nexps=0; nexps<nvars; nexps++) {
++      expdesc v, key;
++      TString * key_str=getlocvar(ls->fs, vars+nexps)->varname;
++      init_exp(&e, VNONRELOC, ls->fs->freereg-1);
++      codestring(ls, &key, key_str );
++      luaK_indexed(ls->fs, &e, &key);
++      if(tested) {
++        /* handle the 'in!' case.
++        **
++        ** exp_or_missing calls exp2reg on key and table,
++        ** which will change their types from VK to VNONRELOC.
++        ** thus, we need to send a copy of table, so the original data
++        ** will be persevered.
++        */
++        expdesc t=table;
++        exp_or_missing(ls,&e,&t,&key,NULL,ls->linenumber);
++      }
++      init_exp(&v, VLOCAL, regs+nexps);
++      luaK_storevar(ls->fs, &v, &e);
++    }
++    removevars(ls->fs, from_var);
++    return;
++  }
+   if (testnext(ls, '='))
+     nexps = explist(ls, &e);
+   else {
+@@ -1482,17 +2162,16 @@
+   FuncState *fs = ls->fs;
+   struct LHS_assign v;
+   suffixedexp(ls, &v.v);
+-  if (ls->t.token == '=' || ls->t.token == ',') { /* stat -> assignment ? */
+-    v.prev = NULL;
++  if (v.v.k == VCALL)  /* stat -> func */
++    SETARG_C(getcode(fs, &v.v), 1);  /* call statement uses no results */
++  else {  /* stat -> assignment */
++    v.prev = v.next= NULL;
+     assignment(ls, &v, 1);
+   }
+-  else {  /* stat -> func */
+-    check_condition(ls, v.v.k == VCALL, "syntax error");
+-    SETARG_C(getcode(fs, &v.v), 1);  /* call statement uses no results */
+-  }
+ }
+ 
+ 
++
+ static void retstat (LexState *ls) {
+   /* stat -> RETURN [explist] [';'] */
+   FuncState *fs = ls->fs;
+Index: lparser.h
+===================================================================
+--- lparser.h	(lua 5.2.2)
++++ lparser.h	(8/22/2013)
+@@ -30,7 +30,9 @@
+   VJMP,		/* info = instruction pc */
+   VRELOCABLE,	/* info = instruction pc */
+   VCALL,	/* info = instruction pc */
+-  VVARARG	/* info = instruction pc */
++  VVARARG,	/* info = instruction pc */
++  VREQUIRED_BIT = 1<<5, /* used by the Required Field patch */
++  VREQUIRED_UMASK = (lu_byte)( ~(1<<5) ),
+ } expkind;
+ 
+ 
+@@ -111,7 +113,28 @@
+   lu_byte freereg;  /* first free register */
+ } FuncState;
+ 
++/*
++** The Required Field patch works by adding a VREQUIRED bit to expression's
++** e->k values.  Most of the time, when any such "required" expression 
++** is encountered by the parser, it will be converted back to a non-required 
++** expression using the discharge_required_exp() call.  However, in the special
++** case of table indexing, (triggered either from suffixexp() or either of 
++** the table unpack contexts -- expressions that have a required mask will 
++** also imply wrapping any implied index results inside a 
++** (exp or _MISSING_FIELD) expression.
++**
++** This implementation strategy makes it relatively easy to have
++**    local a in t!
++** Resolve as
++**    local a = (t! or _MISSING_FIELD('t','a') )
++**
++*/
++#define add_require_mask(k) ( (expkind)  ( ( (lu_byte) k )  | VREQUIRED_BIT) )
++#define clear_require_mask(k) ( (expkind)  ( (lu_byte) k & VREQUIRED_UMASK ) )
++#define check_require_mask(k) ( (lu_byte)(k) & VREQUIRED_BIT )
+ 
++void discharge_required_exp(FuncState *fs, expdesc *e) ;
++
+ LUAI_FUNC Closure *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,
+                                 Dyndata *dyd, const char *name, int firstchar);
+ 
+Index: lstate.c
+===================================================================
+--- lstate.c	(lua 5.2.2)
++++ lstate.c	(8/22/2013)
+@@ -12,6 +12,7 @@
+ #define LUA_CORE
+ 
+ #include "lua.h"
++#include "lauxlib.h"
+ 
+ #include "lapi.h"
+ #include "ldebug.h"
+@@ -259,6 +260,77 @@
+ }
+ 
+ 
++static int _zero(lua_State *L) { lua_pushnumber(L,0); return 1; }
++static int _nullop(lua_State *L) {return 0;}
++static int _nullitr(lua_State *L) { lua_pushcfunction(L,_nullop); return 1; }
++static int _safestring(lua_State *L) { lua_pushstring(L,"_SAFE"); return 1; }
++static void register_safe(lua_State *L) {
++  G(L)->safe=lua_newuserdata(L,0);
++  lua_createtable(L,0,6);
++#define nullmeta(fun) lua_pushcfunction(L,_nullop); lua_setfield(L,-2,fun);
++  lua_pushcfunction(L,_nullitr); lua_setfield(L,-2,"__pairs");
++  lua_pushcfunction(L,_nullitr); lua_setfield(L,-2,"__ipairs");
++  nullmeta("__index")
++  nullmeta("__newindex")
++  nullmeta("__call")
++  lua_pushcfunction(L,_safestring); lua_setfield(L,-2,"__tostring");
++  lua_pushcfunction(L,_zero); lua_setfield(L,-2,"__len");
++#undef nullmeta
++  lua_setmetatable(L,-2);
++  lua_setglobal(L,"_SAFE");
++}
++
++/* on the C side, it can be handy to know if you're dealing with the
++*  _SAFE user data.
++*/
++LUA_API int lua_issafe(lua_State * L, int idx) {
++  return lua_type(L,idx)==LUA_TUSERDATA && G(L)->safe == lua_touserdata(L,idx);
++}
++
++
++static int _MISSING(lua_State *L) {
++  lua_settop(L, 1);
++  if(lua_isnil(L,1)) {
++    lua_pushstring(L,"<expression>");
++    lua_replace(L,1);
++  }
++  return luaL_error(L, "missing required value: %s", luaL_tolstring(L, 1, NULL));
++}
++
++static int _MISSING_FIELD(lua_State *L) {
++  int top = lua_gettop(L);
++  if(!top) lua_settop(L, 1);
++
++  if(lua_isnil(L,1)) {
++    lua_pushstring(L,"<expression>");
++    lua_replace(L,1);
++  }
++
++  if(top>2) {
++    return luaL_error(L,"%s is missing required field: %s -> %s", 
++      luaL_tolstring(L, 1, NULL), 
++      luaL_tolstring(L, 3, NULL),
++      luaL_tolstring(L, 2, NULL) );
++  }
++
++  if(lua_isnil(L,2)) {
++    lua_pushstring(L,"<expression>");
++    lua_replace(L,2);
++  }
++
++  return luaL_error(L, "%s is missing required field: [%s]", 
++    luaL_tolstring(L, 1, NULL), 
++    luaL_tolstring(L, 2, NULL) );
++}
++
++static void register_missing(lua_State *L) {
++  lua_pushcfunction(L,_MISSING);
++  lua_setglobal(L,"_MISSING");
++
++  lua_pushcfunction(L,_MISSING_FIELD);
++  lua_setglobal(L,"_MISSING_FIELD");
++}
++
+ LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud) {
+   int i;
+   lua_State *L;
+@@ -308,6 +380,8 @@
+   }
+   else
+     luai_userstateopen(L);
++  register_safe(L);
++  register_missing(L);
+   return L;
+ }
+ 
+Index: lstate.h
+===================================================================
+--- lstate.h	(lua 5.2.2)
++++ lstate.h	(8/22/2013)
+@@ -145,6 +145,7 @@
+   TString *memerrmsg;  /* memory-error message */
+   TString *tmname[TM_N];  /* array with tag-method names */
+   struct Table *mt[LUA_NUMTAGS];  /* metatables for basic types */
++  void * safe; /* pointer to the standard _SAFE userdata. */
+ } global_State;
+ 
+ 
+Index: lua.h
+===================================================================
+--- lua.h	(lua 5.2.2)
++++ lua.h	(8/22/2013)
+@@ -164,6 +164,7 @@
+ LUA_API int             (lua_isuserdata) (lua_State *L, int idx);
+ LUA_API int             (lua_type) (lua_State *L, int idx);
+ LUA_API const char     *(lua_typename) (lua_State *L, int tp);
++LUA_API int             (lua_issafe) (lua_State * L, int idx);
+ 
+ LUA_API lua_Number      (lua_tonumberx) (lua_State *L, int idx, int *isnum);
+ LUA_API lua_Integer     (lua_tointegerx) (lua_State *L, int idx, int *isnum);
+Index: lvm.c
+===================================================================
+--- lvm.c	(lua 5.2.2)
++++ lvm.c	(8/22/2013)
+@@ -428,7 +428,8 @@
+   switch (op) {  /* finish its execution */
+     case OP_ADD: case OP_SUB: case OP_MUL: case OP_DIV:
+     case OP_MOD: case OP_POW: case OP_UNM: case OP_LEN:
+-    case OP_GETTABUP: case OP_GETTABLE: case OP_SELF: {
++    case OP_GETTABUP: case OP_GETTABLE: case OP_SELF:
++    case OP_GETGLOBAL: {
+       setobjs2s(L, base + GETARG_A(inst), --L->top);
+       break;
+     }
+@@ -491,9 +492,9 @@
+ #define RB(i)	check_exp(getBMode(GET_OPCODE(i)) == OpArgR, base+GETARG_B(i))
+ #define RC(i)	check_exp(getCMode(GET_OPCODE(i)) == OpArgR, base+GETARG_C(i))
+ #define RKB(i)	check_exp(getBMode(GET_OPCODE(i)) == OpArgK, \
+-	ISK(GETARG_B(i)) ? k+INDEXK(GETARG_B(i)) : base+GETARG_B(i))
++  ISK(GETARG_B(i)) ? k+INDEXK(GETARG_B(i)) : base+GETARG_B(i))
+ #define RKC(i)	check_exp(getCMode(GET_OPCODE(i)) == OpArgK, \
+-	ISK(GETARG_C(i)) ? k+INDEXK(GETARG_C(i)) : base+GETARG_C(i))
++  ISK(GETARG_C(i)) ? k+INDEXK(GETARG_C(i)) : base+GETARG_C(i))
+ #define KBx(i)  \
+   (k + (GETARG_Bx(i) != 0 ? GETARG_Bx(i) - 1 : GETARG_Ax(*ci->u.l.savedpc++)))
+ 
+@@ -858,6 +859,12 @@
+           }
+         }
+       )
++      vmcase(OP_GETGLOBAL,
++        Table *reg = hvalue(&G(L)->l_registry);
++        const TValue *gt = luaH_getint(reg, LUA_RIDX_GLOBALS);
++        TValue *rb = k + GETARG_Bx(i);
++        Protect(luaV_gettable(L, gt, rb, ra));
++      )
+       vmcase(OP_EXTRAARG,
+         lua_assert(0);
+       )
