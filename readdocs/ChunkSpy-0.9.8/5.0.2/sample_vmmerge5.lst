@@ -1,0 +1,81 @@
+local a = 1; b = "the quick brown fox\r\n"
+-------- { main
+       1  LOADK    	0 0	; 1
+       2  LOADK    	1 2	; "the quick brown fox\r\n"
+       3  SETGLOBAL	1 1	; b
+-------- } main
+function c() b = a a = b end
+       1  GETUPVAL 	0 0 0	; a
+       2  SETGLOBAL	0 0	; b
+       3  GETGLOBAL	0 0	; b
+       4  SETUPVAL 	0 0 0	; a
+       5  RETURN   	0 1 0
+-------- { main
+       4  CLOSURE  	1 0	; 003F5E28
+       5  MOVE     	0 0 0
+       6  SETGLOBAL	1 3	; c
+-------- } main
+c = nil; c = -a; c = not b
+-------- { main
+       7  LOADNIL  	1 1 0
+       8  SETGLOBAL	1 3	; c
+       9  UNM      	1 0 0
+      10  SETGLOBAL	1 3	; c
+      11  GETGLOBAL	1 1	; b
+      12  NOT      	1 1 0
+      13  SETGLOBAL	1 3	; c
+-------- } main
+for i = 1, 10 do a = a + 2 c() end
+-------- { main
+      14  LOADK    	1 0	; 1
+      15  LOADK    	2 4	; 10
+      16  LOADK    	3 0	; 1
+      17  SUB      	1 1 3
+      18  JMP      	0 3	; to 22
+      19  ADD      	0 0 255	; - 2
+      20  GETGLOBAL	4 3	; c
+      21  CALL     	4 1 1
+      22  FORLOOP  	1 -4	; to 19
+-------- } main
+a = {}; a[1] = false; b = a[1]
+-------- { main
+      23  NEWTABLE 	1 0 0
+      24  MOVE     	0 1 0
+      25  LOADBOOL 	1 0 0
+      26  SETTABLE 	0 250 1	; 1
+      27  GETTABLE 	1 0 250	; 1
+      28  SETGLOBAL	1 1	; b
+-------- } main
+a = d..c..b; a = b == c; a = {1,2,}
+-------- { main
+      29  GETGLOBAL	1 6	; d
+      30  GETGLOBAL	2 3	; c
+      31  GETGLOBAL	3 1	; b
+      32  CONCAT   	0 1 3
+      33  GETGLOBAL	1 1	; b
+      34  GETGLOBAL	2 3	; c
+      35  EQ       	1 1 2
+      36  JMP      	0 1	; to 38
+      37  LOADBOOL 	0 0 1
+      38  LOADBOOL 	0 1 0
+      39  NEWTABLE 	1 2 0
+      40  LOADK    	2 0	; 1
+      41  LOADK    	3 5	; 2
+      42  SETLIST  	1 1
+      43  MOVE     	0 1 0
+-------- } main
+for i in b() do b = 1 end
+-------- { main
+      44  GETGLOBAL	1 1	; b
+      45  CALL     	1 1 4
+      46  TFORPREP 	1 2	; to 49
+      47  LOADK    	4 0	; 1
+      48  SETGLOBAL	4 1	; b
+      49  TFORLOOP 	1 0 0
+      50  JMP      	0 -4	; to 47
+-------- } main
+return
+-------- { main
+      51  RETURN   	0 1 0
+      52  RETURN   	0 1 0
+-------- } main

@@ -428,7 +428,8 @@ void luaV_finishOp (lua_State *L) {
   switch (op) {  /* finish its execution */
     case OP_ADD: case OP_SUB: case OP_MUL: case OP_DIV:
     case OP_MOD: case OP_POW: case OP_UNM: case OP_LEN:
-    case OP_GETTABUP: case OP_GETTABLE: case OP_SELF: {
+    case OP_GETTABUP: case OP_GETTABLE: case OP_SELF:
+    case OP_GETGLOBAL: {
       setobjs2s(L, base + GETARG_A(inst), --L->top);
       break;
     }
@@ -491,9 +492,9 @@ void luaV_finishOp (lua_State *L) {
 #define RB(i)	check_exp(getBMode(GET_OPCODE(i)) == OpArgR, base+GETARG_B(i))
 #define RC(i)	check_exp(getCMode(GET_OPCODE(i)) == OpArgR, base+GETARG_C(i))
 #define RKB(i)	check_exp(getBMode(GET_OPCODE(i)) == OpArgK, \
-	ISK(GETARG_B(i)) ? k+INDEXK(GETARG_B(i)) : base+GETARG_B(i))
+  ISK(GETARG_B(i)) ? k+INDEXK(GETARG_B(i)) : base+GETARG_B(i))
 #define RKC(i)	check_exp(getCMode(GET_OPCODE(i)) == OpArgK, \
-	ISK(GETARG_C(i)) ? k+INDEXK(GETARG_C(i)) : base+GETARG_C(i))
+  ISK(GETARG_C(i)) ? k+INDEXK(GETARG_C(i)) : base+GETARG_C(i))
 #define KBx(i)  \
   (k + (GETARG_Bx(i) != 0 ? GETARG_Bx(i) - 1 : GETARG_Ax(*ci->u.l.savedpc++)))
 
@@ -857,6 +858,12 @@ void luaV_execute (lua_State *L) {
             setnilvalue(ra + j);
           }
         }
+      )
+      vmcase(OP_GETGLOBAL,
+        Table *reg = hvalue(&G(L)->l_registry);
+        const TValue *gt = luaH_getint(reg, LUA_RIDX_GLOBALS);
+        TValue *rb = k + GETARG_Bx(i);
+        Protect(luaV_gettable(L, gt, rb, ra));
       )
       vmcase(OP_EXTRAARG,
         lua_assert(0);

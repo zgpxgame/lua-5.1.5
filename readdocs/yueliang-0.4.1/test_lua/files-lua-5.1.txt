@@ -1,0 +1,20 @@
+# these are the sample scripts found in Lua 5.1.x
+5.1/bisect.lua
+5.1/cf.lua
+5.1/echo.lua
+5.1/env.lua
+5.1/factorial.lua
+5.1/fib.lua
+5.1/fibfor.lua
+5.1/globals.lua
+5.1/hello.lua
+5.1/life.lua
+5.1/luac.lua
+5.1/printf.lua
+5.1/readonly.lua
+5.1/sieve.lua
+5.1/sort.lua
+5.1/table.lua
+5.1/trace-calls.lua
+5.1/trace-globals.lua
+5.1/xd.lua

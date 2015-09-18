@@ -1,0 +1,54 @@
+orig-5.1.3
+
+This is a straightforward port of the Lua 5.1.3 front end (lexical
+analyzer, parser, code generator, binary chunk dumper.)
+
+The front end files are:
+
+	lopcodes.lua	opcode definition
+	lzio.lua	input streams
+	llex.lua	lexical analyzer
+	lparser.lua	parser
+	lcode.lua	code generator
+	ldump.lua	binary chunk dumper
+
+Status: operational, passes all current tests (non-exhaustive)
+
+Major test scripts are:
+
+	test/test_llex.lua		exercises test cases
+	test/test_lparser2.lua		exercises test cases
+
+luac.lua is a clone of Lua 5.1.3's luac.lua, except that it generates a
+binary chunk using Yueliang's front end implementation.
+
+See the README file in orig-5.0.3 for a discussion.
+
+The following is some performance data. Note that absolutely nothing has
+been done to optimize the code; it is meant to mirror the original C as
+an educational tool.
+
+		 lzio	 llex	 TOTAL	Speed (1)
+		(bytes) (bytes) (bytes) (KB/s)
+----------------------------------------------
+(in orig-5.0.3:)
+----------------------------------------------
+normal		 2219	12639	14585	 404.9
+stripped	 1292	 7618	 8910
+----------------------------------------------
+(in orig-5.0.3:)
+----------------------------------------------
+normal		 -	-	-	 389.7
+stripped	 -	-	-
+----------------------------------------------
+
+(1) Speed was benchmarked using a Sempron 3000+. Benchmark scripts are
+in the test directories. Best of first three figures quoted. This is a
+measurement of raw lexer speed, i.e. tokens are read but no processing
+is done. All files are read in entirely before running the lexer.
+
+For Lua 5.1.1, see Yueliang 0.2.1, which was the last release of Lua
+5.1.1 material.
+
+For Lua 5.1.2, see Yueliang 0.2.2, which was the last release of Lua
+5.1.2 material.

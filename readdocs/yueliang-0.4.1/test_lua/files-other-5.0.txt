@@ -1,0 +1,21 @@
+# these are other 5.0.x scripts found in my project directories
+# WARNING currently out of date...
+
+../../SciTELuaExporters/SciTE_ExportBase.lua
+../../SciTELuaExporters/SciTE_ExporterABW.lua
+../../SciTELuaExporters/SciTE_ExporterHTML.lua
+../../SciTELuaExporters/SciTE_ExporterHTMLPlus.lua
+../../SciTELuaExporters/SciTE_ExporterODT.lua
+../../SciTELuaExporters/SciTE_ExporterPDF.lua
+../../SciTELuaExporters/SciTE_ExporterPDFPlus.lua
+../../SciTELuaExporters/SciTE_ExporterRTF.lua
+../../SciTELuaExporters/SciTE_ExporterSXW.lua
+../../SciTELuaExporters/SciTE_ExporterTeX.lua
+../../SciTELuaExporters/SciTE_ExporterTemplate.lua
+../../SciTELuaExporters/SciTE_ExporterXML.lua
+../../LuaSrcDiet/LuaSrcDiet.lua
+../../LuaSrcDiet/LuaSrcDiet_.lua
+../../ChunkBake/ChunkBake.lua
+../../ChunkBake/misc/TestRig.lua
+../../ChunkSpy/5.0.2/ChunkSpy.lua
+../../ChunkSpy/5.1-work4/ChunkSpy.lua

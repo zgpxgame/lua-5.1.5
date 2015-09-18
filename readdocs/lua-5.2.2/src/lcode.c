@@ -381,6 +381,9 @@ void luaK_setoneret (FuncState *fs, expdesc *e) {
 
 
 void luaK_dischargevars (FuncState *fs, expdesc *e) {
+  if( check_require_mask( e->k ) ) {
+    discharge_required_exp(fs,e);
+  }
   switch (e->k) {
     case VLOCAL: {
       e->k = VNONRELOC;
@@ -465,7 +468,7 @@ static void discharge2anyreg (FuncState *fs, expdesc *e) {
 }
 
 
-static void exp2reg (FuncState *fs, expdesc *e, int reg) {
+void exp2reg (FuncState *fs, expdesc *e, int reg) {
   discharge2reg(fs, e, reg);
   if (e->k == VJMP)
     luaK_concat(fs, &e->t, e->u.info);  /* put this jump in `t' list */

@@ -1,0 +1,152 @@
+
+-- start of log --
+
+luaY:parser (table,table) {
+  luaY:open_func (table,table) {
+    luaY:newproto (table) {
+    } luaY:newproto = table
+  } luaY:open_func
+  luaY:next (table) {
+    luaX:lex (table,table) {
+    } luaX:lex = 'TK_LOCAL'
+  } luaY:next
+  luaY:chunk (table) {
+    luaY:enterlevel (table) {
+    } luaY:enterlevel
+    luaY:block_follow ('TK_LOCAL') {
+    } luaY:block_follow = false
+    luaY:statement (table) {
+      luaY:next (table) {
+        luaX:lex (table,table) {
+        } luaX:lex = 'TK_NAME'
+      } luaY:next
+      luaY:testnext (table,'TK_FUNCTION') {
+      } luaY:testnext = false
+      luaY:localstat (table) {
+        luaY:str_checkname (table) {
+          luaY:check_condition (table,true,'<name> expected') {
+          } luaY:check_condition
+          luaY:next (table) {
+            luaX:lex (table,table) {
+            } luaX:lex = '='
+          } luaY:next
+        } luaY:str_checkname = 'a'
+        luaY:new_localvar (table,'a',0) {
+          luaY:registerlocalvar (table,'a') {
+            luaY:growvector (table,table,0,0) {
+            } luaY:growvector
+          } luaY:registerlocalvar = 0
+        } luaY:new_localvar
+        luaY:testnext (table,',') {
+        } luaY:testnext = false
+        luaY:testnext (table,'=') {
+          luaY:next (table) {
+            luaX:lex (table,table) {
+            } luaX:lex = 'TK_NUMBER'
+          } luaY:next
+        } luaY:testnext = true
+        luaY:explist1 (table,table) {
+          luaY:expr (table,table) {
+            luaY:subexpr (table,table,-1) {
+              luaY:enterlevel (table) {
+              } luaY:enterlevel
+              luaY:getunopr ('TK_NUMBER') {
+              } luaY:getunopr = 'OPR_NOUNOPR'
+              luaY:simpleexp (table,table) {
+                luaK:numberK (table,1) {
+                  luaK:setnvalue (table,1) {
+                  } luaK:setnvalue
+                  luaK:addk (table,table,table) {
+                    luaK:ttisnumber ) {
+                    } luaK:ttisnumber = false
+                    luaY:growvector (table,table,0,0) {
+                    } luaY:growvector
+                    luaK:setnvalue (table,0) {
+                    } luaK:setnvalue
+                  } luaK:addk = 0
+                } luaK:numberK = 0
+                luaY:init_exp (table,'VK',0) {
+                } luaY:init_exp
+                luaY:next (table) {
+                  luaX:lex (table,table) {
+                  } luaX:lex = 'TK_EOS'
+                } luaY:next
+              } luaY:simpleexp
+              luaY:getbinopr ('TK_EOS') {
+              } luaY:getbinopr = 'OPR_NOBINOPR'
+              luaY:leavelevel (table) {
+              } luaY:leavelevel
+            } luaY:subexpr = 'OPR_NOBINOPR'
+          } luaY:expr
+          luaY:testnext (table,',') {
+          } luaY:testnext = false
+        } luaY:explist1 = 1
+        luaY:adjust_assign (table,1,1,table) {
+          luaK:exp2nextreg (table,table) {
+            luaK:dischargevars (table,table) {
+            } luaK:dischargevars
+            luaK:freeexp (table,table) {
+            } luaK:freeexp
+            luaK:reserveregs (table,1) {
+              luaK:checkstack (table,1) {
+              } luaK:checkstack
+            } luaK:reserveregs
+            luaK:exp2reg (table,table,0) {
+              luaK:discharge2reg (table,table,0) {
+                luaK:dischargevars (table,table) {
+                } luaK:dischargevars
+                luaK:codeABx (table,'OP_LOADK',0,0) {
+                  luaK:code (table,table,1) {
+                    luaK:dischargejpc (table) {
+                      luaK:patchlistaux (table,-1,0,255,0,255,0) {
+                      } luaK:patchlistaux
+                    } luaK:dischargejpc
+                    luaY:growvector (table,table,0,0) {
+                    } luaY:growvector
+                    luaY:growvector (table,table,0,0) {
+                    } luaY:growvector
+                  } luaK:code = 0
+                } luaK:codeABx = 0
+              } luaK:discharge2reg
+              luaK:hasjumps (table) {
+              } luaK:hasjumps = false
+            } luaK:exp2reg
+          } luaK:exp2nextreg
+        } luaY:adjust_assign
+        luaY:adjustlocalvars (table,1) {
+          luaY:getlocvar (table,0) {
+          } luaY:getlocvar = table
+        } luaY:adjustlocalvars
+      } luaY:localstat
+    } luaY:statement = false
+    luaY:testnext (table,';') {
+    } luaY:testnext = false
+    luaY:block_follow ('TK_EOS') {
+    } luaY:block_follow = true
+    luaY:leavelevel (table) {
+    } luaY:leavelevel
+  } luaY:chunk
+  luaY:check_condition (table,true,'<eof> expected') {
+  } luaY:check_condition
+  luaY:close_func (table) {
+    luaY:removevars (table,0) {
+      luaY:getlocvar (table,0) {
+      } luaY:getlocvar = table
+    } luaY:removevars
+    luaK:codeABC (table,'OP_RETURN',0,1,0) {
+      luaK:code (table,table,1) {
+        luaK:dischargejpc (table) {
+          luaK:patchlistaux (table,-1,1,255,1,255,1) {
+          } luaK:patchlistaux
+        } luaK:dischargejpc
+        luaY:growvector (table,table,1,0) {
+        } luaY:growvector
+        luaY:growvector (table,table,1,0) {
+        } luaY:growvector
+      } luaK:code = 1
+    } luaK:codeABC = 1
+  } luaY:close_func
+} luaY:parser = table
+
+-- end of log --
+

@@ -1,0 +1,28 @@
+Obsolete News for Reference
+
+--
+
+Major changes for version 0.9.6 (see the ChangeLog as well):
+* support for Lua 5.1wk5
+* NOTE: Lua 5.1-work4 NEWTABLE instruction field decoding is incorrect
+  in ChunkSpy 0.9.5, floating point byte format was changed
+
+Major changes for version 0.9.5 (see the ChangeLog as well):
+* support for Lua 5.1wk4
+
+Major changes for version 0.9.4 (see the ChangeLog as well):
+* added helpful comments for a few instructions
+* added a Win32 binary release to LuaForge
+
+Major changes for version 0.9.3 (see the ChangeLog as well):
+* added --rewrite "plat" option to write out reformatted chunks
+* added --run option to execute binary chunks of non-local format
+* added -- option to stop processing of options
+
+Major changes for version 0.9.2 (see the ChangeLog as well):
+* added -o <file> specification of output file option
+* added --source <file> compilation of source files
+* added --interact interactive mode
+* added --brief, a less verbose output style
+
+--

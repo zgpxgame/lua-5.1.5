@@ -1,0 +1,282 @@
+Pos   Hex Data           Description or Code
+------------------------------------------------------------------------
+0000                     ** source chunk: sample.out
+                         ** global header start **
+0000  1B4C7561           header signature: "\27Lua"
+0004  50                 version (major:minor hex digits)
+0005  01                 endianness (1=little endian)
+0006  04                 size of int (bytes)
+0007  04                 size of size_t (bytes)
+0008  04                 size of Instruction (bytes)
+0009  06                 size of OP (bits)
+000A  08                 size of A (bits)
+000B  09                 size of B (bits)
+000C  09                 size of C (bits)
+000D  08                 size of number (bytes)
+000E  B6099368E7F57D41   sample number (double)
+                         * x86 standard (32-bit, little endian, doubles)
+                         * global header = 22 bytes
+                         ** global header end **
+
+0016                     ** function [0] definition (level 1)
+                         ** start of function **
+0016  0C000000           string size (12)
+001A  4073616D706C652E+  "@sample."
+0022  6C756100           "lua\0"
+                         source name: @sample.lua
+0026  00000000           line defined (0)
+002A  00                 nups (0)
+002B  00                 numparams (0)
+002C  00                 is_vararg (0)
+002D  07                 maxstacksize (7)
+                         * lines:
+002E  34000000           sizelineinfo (52)
+                         [pc] (line)
+0032  01000000           [01] (1)
+0036  01000000           [02] (1)
+003A  01000000           [03] (1)
+003E  02000000           [04] (2)
+0042  02000000           [05] (2)
+0046  02000000           [06] (2)
+004A  03000000           [07] (3)
+004E  03000000           [08] (3)
+0052  03000000           [09] (3)
+0056  03000000           [10] (3)
+005A  03000000           [11] (3)
+005E  03000000           [12] (3)
+0062  03000000           [13] (3)
+0066  04000000           [14] (4)
+006A  04000000           [15] (4)
+006E  04000000           [16] (4)
+0072  04000000           [17] (4)
+0076  04000000           [18] (4)
+007A  04000000           [19] (4)
+007E  04000000           [20] (4)
+0082  04000000           [21] (4)
+0086  04000000           [22] (4)
+008A  05000000           [23] (5)
+008E  05000000           [24] (5)
+0092  05000000           [25] (5)
+0096  05000000           [26] (5)
+009A  05000000           [27] (5)
+009E  05000000           [28] (5)
+00A2  06000000           [29] (6)
+00A6  06000000           [30] (6)
+00AA  06000000           [31] (6)
+00AE  06000000           [32] (6)
+00B2  06000000           [33] (6)
+00B6  06000000           [34] (6)
+00BA  06000000           [35] (6)
+00BE  06000000           [36] (6)
+00C2  06000000           [37] (6)
+00C6  06000000           [38] (6)
+00CA  06000000           [39] (6)
+00CE  06000000           [40] (6)
+00D2  06000000           [41] (6)
+00D6  06000000           [42] (6)
+00DA  06000000           [43] (6)
+00DE  07000000           [44] (7)
+00E2  07000000           [45] (7)
+00E6  07000000           [46] (7)
+00EA  07000000           [47] (7)
+00EE  07000000           [48] (7)
+00F2  07000000           [49] (7)
+00F6  07000000           [50] (7)
+00FA  08000000           [51] (8)
+00FE  08000000           [52] (8)
+                         * locals:
+0102  07000000           sizelocvars (7)
+0106  02000000           string size (2)
+010A  6100               "a"
+                         local [0]: a
+010C  01000000             startpc (1)
+0110  33000000             endpc   (51)
+0114  02000000           string size (2)
+0118  6900               "i"
+                         local [1]: i
+011A  12000000             startpc (18)
+011E  16000000             endpc   (22)
+0122  0C000000           string size (12)
+0126  28666F72206C696D+  "(for lim"
+012E  69742900           "it)\0"
+                         local [2]: (for limit)
+0132  12000000             startpc (18)
+0136  16000000             endpc   (22)
+013A  0B000000           string size (11)
+013E  28666F7220737465+  "(for ste"
+0146  702900             "p)\0"
+                         local [3]: (for step)
+0149  12000000             startpc (18)
+014D  16000000             endpc   (22)
+0151  10000000           string size (16)
+0155  28666F722067656E+  "(for gen"
+015D  657261746F722900   "erator)\0"
+                         local [4]: (for generator)
+0165  2E000000             startpc (46)
+0169  32000000             endpc   (50)
+016D  0C000000           string size (12)
+0171  28666F7220737461+  "(for sta"
+0179  74652900           "te)\0"
+                         local [5]: (for state)
+017D  2E000000             startpc (46)
+0181  32000000             endpc   (50)
+0185  02000000           string size (2)
+0189  6900               "i"
+                         local [6]: i
+018B  2E000000             startpc (46)
+018F  32000000             endpc   (50)
+                         * upvalues:
+0193  00000000           sizeupvalues (0)
+                         * constants:
+0197  07000000           sizek (7)
+019B  03                 const type 3
+019C  000000000000F03F   const [0]: (1)
+01A4  04                 const type 4
+01A5  02000000           string size (2)
+01A9  6200               "b"
+                         const [1]: "b"
+01AB  04                 const type 4
+01AC  16000000           string size (22)
+01B0  7468652071756963+  "the quic"
+01B8  6B2062726F776E20+  "k brown "
+01C0  666F780D0A00       "fox\r\n\0"
+                         const [2]: "the quick brown fox\r\n"
+01C6  04                 const type 4
+01C7  02000000           string size (2)
+01CB  6300               "c"
+                         const [3]: "c"
+01CD  03                 const type 3
+01CE  0000000000002440   const [4]: (10)
+01D6  03                 const type 3
+01D7  0000000000000040   const [5]: (2)
+01DF  04                 const type 4
+01E0  02000000           string size (2)
+01E4  6400               "d"
+                         const [6]: "d"
+                         * functions:
+01E6  01000000           sizep (1)
+
+01EA                     ** function [0] definition (level 2)
+                         ** start of function **
+01EA  00000000           string size (0)
+                         source name: (none)
+01EE  02000000           line defined (2)
+01F2  01                 nups (1)
+01F3  00                 numparams (0)
+01F4  00                 is_vararg (0)
+01F5  02                 maxstacksize (2)
+                         * lines:
+01F6  05000000           sizelineinfo (5)
+                         [pc] (line)
+01FA  02000000           [1] (2)
+01FE  02000000           [2] (2)
+0202  02000000           [3] (2)
+0206  02000000           [4] (2)
+020A  02000000           [5] (2)
+                         * locals:
+020E  00000000           sizelocvars (0)
+                         * upvalues:
+0212  01000000           sizeupvalues (1)
+0216  02000000           string size (2)
+021A  6100               "a"
+                         upvalue [0]: a
+                         * constants:
+021C  01000000           sizek (1)
+0220  04                 const type 4
+0221  02000000           string size (2)
+0225  6200               "b"
+                         const [0]: "b"
+                         * functions:
+0227  00000000           sizep (0)
+                         * code:
+022B  05000000           sizecode (5)
+; (2)  function c() b = a a = b end
+022F  04000000           [1] getupval   0   0        ; a
+0233  07000000           [2] setglobal  0   0        ; b
+0237  05000000           [3] getglobal  0   0        ; b
+023B  08000000           [4] setupval   0   0        ; a
+023F  1B800000           [5] return     0   1
+                         * func header   = 12 bytes
+                         * lines size    = 24 bytes
+                         * locals size   = 4 bytes
+                         * upvalues size = 10 bytes
+                         * consts size   = 11 bytes
+                         * funcs size    = 4 bytes
+                         * code size     = 24 bytes
+                         * TOTAL size    = 89 bytes
+                         ** end of function **
+
+                         * code:
+0243  34000000           sizecode (52)
+; (1)  local a = 1; b = "the quick brown fox\r\n"
+0247  01000000           [01] loadk      0   0        ; 1
+024B  81000001           [02] loadk      1   2        ; "the quick brown fox\r\n"
+024F  47000001           [03] setglobal  1   1        ; b
+; (2)  function c() b = a a = b end
+0253  22000001           [04] closure    1   0        ; 1 upvalues
+0257  00000000           [05] move       0   0
+025B  C7000001           [06] setglobal  1   3        ; c
+; (3)  c = nil; c = -a; c = not b
+025F  03800001           [07] loadnil    1   1
+0263  C7000001           [08] setglobal  1   3        ; c
+0267  11000001           [09] unm        1   0
+026B  C7000001           [10] setglobal  1   3        ; c
+026F  45000001           [11] getglobal  1   1        ; b
+0273  12800001           [12] not        1   1
+0277  C7000001           [13] setglobal  1   3        ; c
+; (4)  for i = 1, 10 do a = a + 2 c() end
+027B  01000001           [14] loadk      1   0        ; 1
+027F  01010002           [15] loadk      2   4        ; 10
+0283  01000003           [16] loadk      3   0        ; 1
+0287  CD800001           [17] sub        1   1   3
+028B  94008000           [18] jmp        3            ; to [22]
+028F  CC3F0000           [19] add        0   0   255  ; 2
+0293  C5000004           [20] getglobal  4   3        ; c
+0297  59800004           [21] call       4   1   1
+029B  DCFE7F01           [22] forloop    1   -4       ; to [19] if loop
+; (5)  a = {}; a[1] = false; b = a[1]
+029F  0A000001           [23] newtable   1   0   0    ; array=0, hash=0
+02A3  00800000           [24] move       0   1
+02A7  02000001           [25] loadbool   1   0   0    ; false
+02AB  49007D00           [26] settable   0   250 1    ; 1
+02AF  863E0001           [27] gettable   1   0   250  ; 1
+02B3  47000001           [28] setglobal  1   1        ; b
+; (6)  a = d..c..b; a = b == c; a = {1,2,}
+02B7  85010001           [29] getglobal  1   6        ; d
+02BB  C5000002           [30] getglobal  2   3        ; c
+02BF  45000003           [31] getglobal  3   1        ; b
+02C3  D3800000           [32] concat     0   1   3
+02C7  45000001           [33] getglobal  1   1        ; b
+02CB  C5000002           [34] getglobal  2   3        ; c
+02CF  95800001           [35] eq         1   1   2    ; to [37] if false
+02D3  14008000           [36] jmp        1            ; to [38]
+02D7  42000000           [37] loadbool   0   0   1    ; false, to [39]
+02DB  02800000           [38] loadbool   0   1   0    ; true
+02DF  0A000101           [39] newtable   1   2   0    ; array=2, hash=0
+02E3  01000002           [40] loadk      2   0        ; 1
+02E7  41010003           [41] loadk      3   5        ; 2
+02EB  5F000001           [42] setlist    1   1        ; index 1 to 2
+02EF  00800000           [43] move       0   1
+; (7)  for i in b() do b = 1 end
+02F3  45000001           [44] getglobal  1   1        ; b
+02F7  19810001           [45] call       1   1   4
+02FB  5E008001           [46] tforprep   1   2        ; to [49]
+02FF  01000004           [47] loadk      4   0        ; 1
+0303  47000004           [48] setglobal  4   1        ; b
+0307  1D000001           [49] tforloop   1       0    ; to [51] if exit
+030B  D4FE7F00           [50] jmp        -4           ; to [47]
+; (8)  return
+030F  1B800000           [51] return     0   1
+0313  1B800000           [52] return     0   1
+                         * func header   = 24 bytes
+                         * lines size    = 212 bytes
+                         * locals size   = 145 bytes
+                         * upvalues size = 4 bytes
+                         * consts size   = 79 bytes
+                         * funcs size    = 93 bytes
+                         * code size     = 212 bytes
+                         * TOTAL size    = 769 bytes
+                         ** end of function **
+
+                         * TOTAL size = 791 bytes
+0317                     ** end of chunk **

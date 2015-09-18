@@ -1,0 +1,90 @@
+Lua Source Table
+http://lua-users.org/wiki/LuaSourceTable
+
+
+Here's some notes about Lua's table implementation (ltable.c/ltable.h).
+
+Implementation Description
+Some articles describing the implementation:
+ (*) [The implementation of Lua 5.0] http://www.tecgraf.puc-rio.br/~lhf/ftp/doc/jucs05.pdf
+ 
+Using Lua Tables Apart from Lua
+
+Here's how to use only Lua's table implementation outside Lua.
+
+/* tabletest.c - tested on Lua 5.1.3 */
+#include "ltable.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+
+/* Error handling */
+void luaG_runerror (lua_State *L, const char *fmt, ...) {
+  va_list argp;
+  va_start(argp, fmt);
+  vfprintf(stderr, fmt, argp);
+  va_end(argp);
+  exit(1);
+}
+void *luaM_toobig (lua_State *L) {
+  luaG_runerror(L, "memory allocation error: block too big");
+  return NULL;
+}
+
+/* Memory allocation */
+void *luaM_realloc_ (lua_State *L, void *block, size_t osize, size_t nsize) {
+  lua_assert((osize == 0) == (block == NULL));
+
+  if (nsize == 0) {
+    free(block);
+    block = NULL;
+  }
+  else block = realloc(block, nsize);
+
+  if (block == NULL && nsize > 0)
+    luaG_runerror(L, "not enough memory");
+  lua_assert((nsize == 0) == (block == NULL));
+  return block;
+}
+
+/* There is no global state (L) to link allocated tables to, so do nothing. */
+void luaC_link (lua_State *L, GCObject *o, lu_byte tt) { }
+void luaC_barrierback (lua_State *L, Table *t) { }
+
+int main()
+{
+  Table * h;
+  lua_State * L = NULL;
+  int i;
+
+  h = luaH_new (NULL, 0, 0);
+
+  /* h[5] = 10 */
+  setnvalue(luaH_setnum(L, h, 5), 10);
+  assert(luaH_getn(h) == 0);
+
+  /* h[1] = 2 */
+  setnvalue(luaH_setnum(L, h, 1), 2);
+  assert(luaH_getn(h) == 1);
+
+  /* iterate over table keys 1..10 */
+  for(i=1; i<=10; i++) {
+    const TValue * v = luaH_getnum(h, i);  /* = h[i] */
+    double f = nvalue(v);
+    assert(f == ((i == 1) ? 2 : (i == 5) ? 10 : 0));
+    assert(v != NULL || f == 0);
+    printf("%d = %f\n", i, f);
+  }
+
+  luaH_free(L, h);
+
+  printf("done\n");
+
+  return 0;
+}
+Also, in lobject.c, add "#ifndef SKIP ..... #endif" around the pushstr, luaO_pushvfstring, luaO_pushfstring, and luaO_chunkid functions to avoid link errors due to extra dependencies.
+
+Compile with
+
+gcc -DSKIP tabletest.c ltable.c  lobject.c

@@ -1,0 +1,65 @@
+test_scripts-5.*.lua
+----------------------
+
+The scripts test_scripts*.lua are for exercising the frontends. Such
+testing is non-exhaustive, but useful all the same.
+
+The files in the 5.0 directory are the sample scripts from the Lua 5.0.x
+test directory. Ditto for the 5.1 directory. See the COPYRIGHT_Lua5 for
+the copyright notice.
+
+For example, to run the 5.0.x script tester:
+
+	>lua test_scripts-5.0.lua
+
+Or, if you have both Lua 5.0.x and Lua 5.1.x, you can prepare two
+binaries and run them like this:
+
+	>lua5.0 test_scripts-5.0.lua
+	>lua5.1 test_scripts-5.1.lua
+
+If the compilation result is exact, "CORRECT" is printed, otherwise both
+binary chunks are written to the current directory as bc1.out and
+bc2.out. You can use a disassembly tool like ChunkSpy to generate
+listings for both files, then they can be compared with a visual diff
+tool. ChunkSpy 0.9.8 supports 5.0.x and 5.1.x.
+
+For testing additional files, add the argument "ALL" like this:
+
+	>lua test_scripts-5.0.lua ALL
+
+This will pull in additional personal script files for testing. But in
+order to do so, you'd have to adjust the files files-other-*.txt.
+
+Current status:
+
+Frontend version	File set			Result
+---------------------------------------------------------------------
+Yueliang 5.0.3		files-lua-5.0.txt		ALL CORRECT
+			files-yueliang-5.0.txt		ALL CORRECT
+Yueliang 5.1.2		files-lua-5.1.txt		ALL CORRECT
+			files-yueliang-5.1.txt		ALL CORRECT
+---------------------------------------------------------------------
+
+test_parser-5.x.lua
+-------------------
+
+The script files test_parser-5.0.lua and test_parser-5.1.lua contains
+many test cases for both parsers. There are a lot of failure cases as
+well as pass cases in order to exercise the parsers well, though the
+test list is not exhaustive.
+
+	test_parser-5.0.lua	503 test cases
+	test_parser-5.1.lua	524 test cases
+
+For the actual test scripts, see test_lparser2.lua in the respective
+test directories of each front end. The 5.0.x front end of Yueliang
+passed all the tests in test_parser-5.0.lua without any failures, while
+testing of the 5.1.x front end using test_parser-5.1.lua led to one
+bug found and fixed.
+
+For Lua 5.0.2, see Yueliang 0.1.3, which was the last release of Lua
+5.0.2 material.
+
+For Lua 5.1.1, see Yueliang 0.2.1, which was the last release of Lua
+5.1.1 material.

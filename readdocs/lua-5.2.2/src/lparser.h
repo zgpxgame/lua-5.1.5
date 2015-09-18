@@ -30,7 +30,9 @@ typedef enum {
   VJMP,		/* info = instruction pc */
   VRELOCABLE,	/* info = instruction pc */
   VCALL,	/* info = instruction pc */
-  VVARARG	/* info = instruction pc */
+  VVARARG,	/* info = instruction pc */
+  VREQUIRED_BIT = 1<<5, /* used by the Required Field patch */
+  VREQUIRED_UMASK = (lu_byte)( ~(1<<5) ),
 } expkind;
 
 
@@ -111,6 +113,27 @@ typedef struct FuncState {
   lu_byte freereg;  /* first free register */
 } FuncState;
 
+/*
+** The Required Field patch works by adding a VREQUIRED bit to expression's
+** e->k values.  Most of the time, when any such "required" expression 
+** is encountered by the parser, it will be converted back to a non-required 
+** expression using the discharge_required_exp() call.  However, in the special
+** case of table indexing, (triggered either from suffixexp() or either of 
+** the table unpack contexts -- expressions that have a required mask will 
+** also imply wrapping any implied index results inside a 
+** (exp or _MISSING_FIELD) expression.
+**
+** This implementation strategy makes it relatively easy to have
+**    local a in t!
+** Resolve as
+**    local a = (t! or _MISSING_FIELD('t','a') )
+**
+*/
+#define add_require_mask(k) ( (expkind)  ( ( (lu_byte) k )  | VREQUIRED_BIT) )
+#define clear_require_mask(k) ( (expkind)  ( (lu_byte) k & VREQUIRED_UMASK ) )
+#define check_require_mask(k) ( (lu_byte)(k) & VREQUIRED_BIT )
+
+void discharge_required_exp(FuncState *fs, expdesc *e) ;
 
 LUAI_FUNC Closure *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,
                                 Dyndata *dyd, const char *name, int firstchar);
