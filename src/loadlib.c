@@ -565,10 +565,11 @@ static int ll_require (lua_State *L) {
 ** 调用条件：栈顶是函数环境表
 */
 static void setfenv (lua_State *L) {
+  /* 只能由LUA函数调用module，而不能由C调用，否则抛出错误 */
   lua_Debug ar;
-  if (lua_getstack(L, 1, &ar) == 0 || /* 取出调用module()的函数的信息 */
-      lua_getinfo(L, "f", &ar) == 0 ||  /* get calling function */
-      lua_iscfunction(L, -1)) { /* 由C函数调用module() */
+  if (lua_getstack(L, 1, &ar) == 0 || /* 从调用栈取出调用module的函数，检测调用函数是不是C函数 */
+      lua_getinfo(L, "f", &ar) == 0 ||
+      lua_iscfunction(L, -1)) {
     luaL_error(L, LUA_QL("module") " not called from a Lua function");
   }
 

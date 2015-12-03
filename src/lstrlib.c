@@ -491,7 +491,7 @@ static int push_captures (MatchState *ms, const char *s, const char *e) {
   return nlevels;  /* number of strings pushed */
 }
 
-
+/* find: 1 ≤È’“£¨ 0 ∆•≈‰ */
 static int str_find_aux (lua_State *L, int find) {
   size_t l1, l2;
   const char *s = luaL_checklstring(L, 1, &l1);

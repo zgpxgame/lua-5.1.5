@@ -58,6 +58,7 @@ void luaZ_init (lua_State *L, ZIO *z, lua_Reader reader, void *data) {
 /* 从流中读取n个字节放入b中，返回缺少的字节数 */
 size_t luaZ_read (ZIO *z, void *b, size_t n) {
   while (n) {
+	/* 将流(z)中一段段的内容填充到缓冲区(b)中，直到填满缓冲区(b)，或流(z)中没有数据为止 */
     size_t m;
     if (luaZ_lookahead(z) == EOZ)
       return n;  /* return number of missing bytes */

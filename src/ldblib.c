@@ -208,7 +208,7 @@ static int db_getlocal (lua_State *L) {
   int arg;
   lua_State *L1 = getthread(L, &arg);
   lua_Debug ar;
-  const char *name;
+  const char *name; /* arg + 1 -> level, arg + 2 -> local */
   if (!lua_getstack(L1, luaL_checkint(L, arg+1), &ar))  /* out of range? */
     return luaL_argerror(L, arg+1, "level out of range");
   name = lua_getlocal(L1, &ar, luaL_checkint(L, arg+2));
