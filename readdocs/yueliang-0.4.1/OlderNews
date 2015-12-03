@@ -1,0 +1,43 @@
+OLDER NEWS
+
+Major changes for version 0.2.4 (details in the ChangeLog):
+* Completely reworked native parser skeleton for 5.0.3
+  (Partially working, test snippets and logging messages being written
+   in order to verify it. This is a test run limited to a parser
+   skeleton before doing a full native implementation for 5.1.x)
+
+Major changes for version 0.2.3 (details in the ChangeLog):
+* Updated front end to 5.1.3
+
+Major changes for version 0.2.2 (details in the ChangeLog):
+* Updated front end to 5.1.2
+
+Major changes for version 0.2.1 (details in the ChangeLog):
+* Added a parser test suite for both 5.0.3 and 5.1.1 front ends
+* One bug fixed for the 5.1.1 front end
+
+Major changes for version 0.2.0 (details in the ChangeLog):
+* Yueliang can generate Lua 5.1.1 binary chunks now
+
+Major changes for version 0.1.4 (details in the ChangeLog):
+* updated 5.0.2 material to 5.0.3, front end test script
+* updated 5.1 material to 5.1.1, added ldump.lua, lopcodes.lua,
+  and some test scripts, lexer debugged
+
+Major changes for version 0.1.3 (details in the ChangeLog):
+* added a Lua-style expression parsing demonstrator
+* added lexer for Lua 5.1
+* native versions of Lua 5.0.2 lexer in the nat-5.0.2 directory
+* 0.1.3 will be the last version of Yueliang for Lua 5.0.2
+
+Major changes for version 0.1.2 (details in the ChangeLog):
+* added test cases for number conversion functions in ldump.lua
+  (recognizes +/- infinity now)
+
+Major changes for version 0.1.1 (details in the ChangeLog):
+* added a script to generate a call graph or hierarchy
+
+Major changes for version 0.1.0 (details in the ChangeLog):
+* initial release: lexer/parser/code generator works, and binary
+  chunks can be produced
+

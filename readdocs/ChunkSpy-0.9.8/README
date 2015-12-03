@@ -1,0 +1,459 @@
+
+  ChunkSpy.lua
+  A Lua 5 binary chunk disassembler
+
+  Copyright (c) 2004-2006 Kein-Hong Man <khman@users.sf.net>
+  The COPYRIGHT file describes the conditions under which this
+  software may be distributed (basically a Lua 5-style license.)
+
+  http://luaforge.net/projects/chunkspy/
+  http://www.geocities.com/keinhong/chunkspy.html
+
+--
+
+INTRODUCTION
+
+ChunkSpy is a tool to disassemble a Lua binary chunk into a verbose
+listing that can then be studied. Its output bears a resemblance to the
+output listing of assemblers. Nick Trout's vmmerge5.lua was the tool
+that prompted me to write ChunkSpy, because I wanted something that can
+tell me in great detail what goes on inside a Lua binary chunk file, not
+just the instructions. It is intended to be a tool for learning Lua
+internals as well.
+
+If you want to learn the Lua virtual machine instruction set, there is
+"A No-Frills Introduction to Lua 5 VM Instructions" based on ChunkSpy,
+available from the Documents section of ChunkSpy's project site in PDF
+and ODT formats. There are two versions of the document, one for Lua
+5.0.2 and one for Lua 5.1.
+
+NOTE: "chunk" in the following usually means "binary chunk".
+
+ChunkSpy is contained in a single Lua file, ChunkSpy.lua, so that it is
+very portable; there are no C source files to compile. All you need is a
+copy of the Lua command line executable, lua, plus optionally the binary
+chunk compiler, luac, to generate those binary chunk files. ChunkSpy
+isn't foolproof, but if it is run on a Lua executable that has a number
+data type that has a better range and precision than the binary chunk's
+representation, then it *should* work.
+
+ChunkSpy currently works only with Lua 5 binary chunks. There are two
+versions of the script -- one is for Lua 5.0.2 while the other is for
+Lua 5.1. Each must run on the version of Lua 5 it is targeted for.
+
+This is a beta release, so it is NOT bug-free. Everything was done on
+self-compiled Lua 5 executables, on Win32. Bug reports are welcome, as
+are enhancements (see FEEDBACK at the end of this document.) A future
+TODO is some sort of more verbose disassembly option. ChunkSpy will
+always be maintained as a single script file.
+
+Since ChunkSpy is written in Lua, the display is very customizable;
+there are various configuration options for display in the script. This
+is not reflected in the command line options; I want to keep command
+line options simple.
+
+--
+
+WHAT'S NEW
+
+Major changes for version 0.9.8 (see the ChangeLog as well):
+* support for Lua 5.1
+
+Major changes for version 0.9.7 (see the ChangeLog as well):
+* support for Lua 5.1wk6
+
+--
+
+CHUNKSPY OPTIONS
+
+Fundamentally, ChunkSpy does only ONE thing -- it generates a listing
+from a Lua 5 binary chunk file. Part of the usage information is as
+follows:
+
+    usage: lua ChunkSpy.lua [options] [filenames]
+
+    options:
+      -h, --help        prints usage information
+      --stats           prints some statistical information
+      --brief           generate assembly-style brief listing
+      --auto            auto detects binary chunk profile
+      -o <file>         specify file name to write output listing
+      --source <file>   generate listing from a Lua source file
+      --rewrite "plat"  generate binary chunk using given profile;
+                        use "local" for local binary chunk format
+      --run             convert to local format, load and execute
+      --test            perform internal tests only
+      --sample          generate sample listing only
+      --interact        *interactive mode*, output brief listings
+      --                stop handling arguments
+
+Non-binary chunk files are usually ignored, unless it is the source code
+file of the binary chunk, in which case the source code will be merged
+into the output listing (more on this later.)
+
+--
+
+USING CHUNKSPY
+
+Note that the following samples are from the Lua 5.0.2 version.
+
+The output listing is always sent to stdout. The --test option runs a
+few primitive internal tests. They are pretty useless tests, more
+relevant during ChunkSpy development. Example execution:
+
+    >lua ChunkSpy.lua --test
+    ChunkSpy_Test: completed simple tests without errors
+
+The --sample option produces a listing from an internal dummy function.
+This internal anonymous function (NOTE: which doesn't actually work) is
+duplicated in the file sample.lua that is included in the release. This
+is useful for quick testing, and as a demonstration of creating a
+listing from a string dump of a function. You should get something like
+this:
+
+    >lua Chunkspy.lua --sample
+    Pos   Hex Data           Description or Code
+    ------------------------------------------------------------------------
+    0000                     ** source chunk name: test sample
+                             ** global header start **
+    0000  1B4C7561           header signature "\27Lua"
+    0004  50                 version (major:minor hex digits)
+    0005  01                 endianness (1=little endian)
+    0006  04                 size of int (bytes)
+    0007  04                 size of size_t (bytes)
+    ...
+
+The first column is the offset (position) of the piece of information or
+data in the chunk file. The second column contains the data values in
+hexadecimal. The final column is the description of the chunk item.
+
+The --stats option adds some extra statistical information (mostly sizes
+of various component blocks of functions) to the listing.
+
+The simplest way of calling ChunkSpy is:
+
+    >lua ChunkSpy.lua luac.out
+    Pos   Hex Data           Description or Code
+    ------------------------------------------------------------------------
+    0000                     ** source chunk name: luac.out
+                             ** global header start **
+    0000  1B4C7561           header signature "\27Lua"
+    ...
+
+where luac.out is the binary chunk file that was generated using luac.
+Alternatively, ChunkSpy can use the Lua environment it is running on to
+generate a native binary chunk, and then process that. E.g.
+
+    >lua ChunkSpy.lua --source myscript.lua
+    Pos   Hex Data           Description or Code
+    ------------------------------------------------------------------------
+    0000                     ** source chunk name: luac.out
+                             ** global header start **
+    0000  1B4C7561           header signature "\27Lua"
+    ...
+
+To redirect the output to a file, do something like this:
+
+    >lua ChunkSpy.lua luac.out > myscript.lst
+    ...
+
+Or, specify the output filename:
+
+    >lua ChunkSpy.lua luac.out -o myscript.lst
+
+The --brief option produces a less verbose output that is more like an
+assembly language listing. It bears a slight similarity to luas assembly
+code. This format is easier for editors to syntax-highlight. Some
+property settings for syntax highlighting of the output listing on the
+SciTE editor is included in the file scite_syntax_highlight.properties.
+Here is an example of a partial listing generated using --brief:
+
+    ; function [0] definition (level 2)
+    ; 1 upvalues, 0 params, 2 stacks
+    .function  1 0 0 2
+    .upvalue  "a"  ; 0
+    .const  "b"  ; 0
+    ; (2)  function c() b = a a = b end
+    [1] getupval   0   0        ; a
+    [2] setglobal  0   0        ; b
+    [3] getglobal  0   0        ; b
+    [4] setupval   0   0        ; a
+    [5] return     0   1
+    ; end of function
+
+--
+
+PROFILES AND GLOBAL HEADERS
+
+By default, ChunkSpy will validate the global header information so that
+the number matches the profile of binary chunks generated by a vanilla
+Lua distribution on a little-endian platform. This configuration is
+identified by the following line in the listing output:
+
+    * x86 standard (32-bit, little endian, doubles)
+
+In order to load and parse a chunk that has different characteristics,
+you will need to set the --auto option. --auto will cause ChunkSpy to
+accept almost any global header numbers. If the configuration matches a
+profile in its internal platform list, then the platform will be
+recognized and an identification line (like the above) will be printed.
+To process a non-"x86 standard" chunk:
+
+    >lua ChunkSpy.lua --auto luac.out > myscript.lst
+
+Currently, two profile are defined, "x86 standard" and "big endian int".
+Custom binary chunks may be parsed correctly, or they may not. No actual
+testing has been done on this, but the code is all there.
+
+To verify that a custom chunk is correct, write your own profile and put
+it into the script. Then set the default to your profile and process the
+chunk without --auto, and ChunkSpy will be forced to verify the profile.
+
+--
+
+MERGING IN THE SOURCE LISTING
+
+Like vmmerge5.lua, ChunkSpy can merge a chunk's source code lines back
+into the listing. This feature works "magically" when the source file of
+the chunk is specified as well on the command line. For example, if
+luac.out is the binary chunk of myscript.lua (using luac without -o),
+then you can do this:
+
+    >luac myscript.lua
+    >lua ChunkSpy.lua luac.out myscript.lua > myscript.lst
+
+Your binary chunk must not be stripped (using -s in luac) for merging to
+work. The listing file, myscript.lst, will have something like this:
+
+    ...
+    ; (0212)      sum = sum * 256 + string.byte(x, i)
+    1425  CEBF0005           [08] mul        5   1   255  ; 256
+    1429  85010006           [09] getglobal  6   6        ; string
+    142D  46400306           [10] gettable   6   6   257  ; "byte"
+    1431  00000007           [11] move       7   0
+    1435  00000108           [12] move       8   2
+    1439  99800106           [13] call       6   3   2
+    143D  8C810201           [14] add        1   5   6
+    ...
+
+The source file name is matched using the source name field in the
+top-level function of the chunk. The script tries to match using a
+case-sensitive comparison first, then a case-insensitive comparison, and
+the first valid match is used. The source file has to reside in the same
+(current) directory. If you have renamed the source file, ChunkSpy will
+not be able to find it.
+
+--
+
+INTERACTIVE MODE
+
+ChunkSpy can run in interactive mode -- it will prompt the user for
+input, generate a binary chunk from that, and dump a brief-style listing
+immediately for the user to see. This gives the user instant feedback,
+useful for exploration.
+
+You can exit the interactive mode by using the escape sequence on your
+system (e.g. ^Z on Win32) or by typing 'exit' or 'quit' (case-sensitive)
+and you can get some help information by typing 'help'.
+
+For example, a simple assignment, "a=1", produces the following:
+
+    >a=1
+    ; source chunk: (interactive mode)
+    ; x86 standard (32-bit, little endian, doubles)
+
+    ; function [0] definition (level 1)
+    ; 0 upvalues, 0 params, 2 stacks
+    .function  0 0 0 2
+    .const  "a"  ; 0
+    .const  1  ; 1
+    [1] loadk      0   1        ; 1
+    [2] setglobal  0   0        ; a
+    [3] return     0   1
+    ; end of function
+
+Multiline chunks can be entered by placing a backslash ("\") at the end
+of the line to be continued. E.g.
+
+    >a=1 \
+    >>b=2
+    ; source chunk: (interactive mode)
+    ; x86 standard (32-bit, little endian, doubles)
+    ...
+
+--
+
+GENERATING THE SAMPLES
+
+sample.lua is a nonsensical bit of code that was used for testing. It is
+included as a very simple exercise that you can immediately try.
+
+   sample.lua	does-not-work-sources, testing only
+   sample.out	luac-compiled Lua 5 binary chunk, unstripped
+
+Four sample listings are provided for easy comparison:
+
+   sample_luac.lst		luac listing
+   sample_vmmerge5.lst		vmmerge5 merged listing
+   sample_chunkspy1.lst		ChunkSpy listing, basic
+   sample_chunkspy2.lst		ChunkSpy listing, with everything
+   sample_chunkspy3.lst		ChunkSpy listing, brief & merged
+
+The luac listing and the vmmerge5 listing were generated using:
+
+    >luac -l -o sample.out sample.lua > sample_luac.lst
+    >lua vmmerge5.lua --file sample.lua > sample_vmmerge5.lst
+
+The ChunkSpy listings were generated using the following:
+
+    >lua ChunkSpy.lua sample.out > sample_chunkspy1.lst
+    >lua ChunkSpy.lua --stats sample.out sample.lua > sample_chunkspy2.lst
+    >lua ChunkSpy.lua --brief sample.out sample.lua > sample_chunkspy3.lst
+
+You can process ChunkSpy itself with the following:
+
+    >luac -l -o ChunkSpy.out ChunkSpy.lua > ChunkSpy_luac.lst
+    >lua vmmerge5.lua --file ChunkSpy.lua > ChunkSpy_vmmerge5.lst
+    >lua ChunkSpy.lua ChunkSpy.out > ChunkSpy_chunkspy1.lst
+    >lua ChunkSpy.lua --stats ChunkSpy.out ChunkSpy.lua > ChunkSpy_chunkspy2.lst
+    >lua ChunkSpy.lua --brief ChunkSpy.out ChunkSpy.lua > ChunkSpy_chunkspy3.lst
+
+--
+
+REWRITING BINARY CHUNKS
+
+With the --rewrite option, ChunkSpy can load a binary chunk and rewrite
+it into another binary chunk format or profile. Just specify a binary
+chunk, or a source file with the --source option, then specify the
+desired platform with the --rewrite option and finally specify an output
+file. The following rewrites the binary chunk ChunkSpy1.out into the
+same format using the special profile identifier of "local":
+
+    >luac -o ChunkSpy1.out ChunkSpy.lua
+    >lua ChunkSpy.lua ChunkSpy1.out --rewrite "local" -o ChunkSpy2.out
+
+ChunkSpy passes this test, meaning it can parse a binary chunk file and
+write out an identical binary chunk file using the parsed information.
+
+If another platform is specified, then ChunkSpy can write out a binary
+chunk in that format. Depending on the number data type, precision may
+be lost or numbers may overflow. Here are two ways of converting the
+ChunkSpy1.out binary chunk to a "bin endian int" binary chunk:
+
+    >lua ChunkSpy.lua ChunkSpy1.out --rewrite "big endian int" -o ChunkSpy3.out
+    >lua ChunkSpy.lua --source ChunkSpy.lua --rewrite "big endian int" -o ChunkSpy4.out
+
+The output should be identical. For the second method (using --source)
+note that line ending interpretation on Windows might cause multiline
+[[..]] literal strings to be read differently.
+
+Binary chunks with non-local formats can be rewritten to produce a new
+chunk that would execute on the local platform by specifying "local" as
+the profile:
+
+    >lua ChunkSpy.lua --auto ChunkSpy3.out --rewrite "local" -o ChunkSpy5.out
+
+In this case, ChunkSpy5.out is slightly different from ChunkSpy1.out
+(you can test this by writing both to a pair of listings and running
+diff on them) because some numbers had their fractional components
+truncated. Other than that, the rewritten data is identical. By
+specifying your own profiles in the script, you can read and convert
+non-standard binary chunks easily.
+
+When doing such processing, remember to use the --auto option of you are
+reading a binary chunk that is in a different format from the default
+profile of "x86 standard", like this:
+
+    >lua ChunkSpy.lua --auto ChunkSpy3.out > ChunkSpy3.lst
+    >lua ChunkSpy.lua --auto ChunkSpy4.out > ChunkSpy4.lst
+
+--
+
+RUNNING BINARY CHUNKS OF NON-LOCAL FORMATS
+
+Finally, one can run binary chunks of non-local formats using the same
+rewriting mechanism. This option is experimental, because the chunk is
+not properly contained in a sandbox. It uses a simple inheritance
+mechanism, but the assumption that unassigned globals are nil no longer
+holds. Also, fiddling with the global table _G will mess up the
+containment.
+
+So at the moment this works okay for scripts that does not circumvent
+this primitive sandbox. ChunkSpy3.out from the earlier section will not
+normally run on an "x86 standard" system, but the following should work:
+
+    >lua ChunkSpy.lua --run ChunkSpy3.out
+
+Conversion to the local format will take a moment, then the chunk is
+executed. You should then be able to see the usage information. If the
+binary chunk can process arguments, use the -- option to stop argument
+processing for the parent script, and place arguments for the child
+script after the --, like this:
+
+    >lua ChunkSpy.lua --run ChunkSpy3.out -- --sample
+
+The parent ChunkSpy.lua will run using "--run ChunkSpy3.out" as the
+arguments, while the child ChunkSpy3.out will run using "--sample" as
+the argument. You should see the sample listing produced.
+
+--
+
+MISCELLANEOUS NOTES
+
+Normal ChunkSpy listings are not meant to be brief; they are meant to
+show everything. For a less lenghty style, use the --brief option. The
+format of the brief option might change in the future if there is a
+standard on how to write Lua assembly code.
+
+Vanilla Lua generates non-optimal instruction sequences; but remember
+that you are dealing with a scripting language. Bytecode size rarely
+matter in most scripting languages, since memory and disk space is more
+or less free. Performance is a trade-off between generating bytecode and
+executing the bytecode in a virtual machine. Note that it is an
+engineering tradeoff; we are not looking for perfection from an academic
+research point of view. Lua is well-balanced and engineered.
+
+Some kind of tutorial is one future TODO (I am working on something at
+the moment.) Some pointers on reading and deciphering the disassembly
+listing would be useful too. If you want to contribute any document,
+basic HTML is preferred.
+
+If you want to tweak or customize ChunkSpy, go right ahead and dig in.
+I've tried to keep the code simple, nothing fancy, with a sprinkling of
+comments. Some additional notes (like floating-point number schemes) are
+included for convenience.
+
+--
+
+DEVELOPMENT TODOS
+
+* Need a proper test suite
+* Code needs major cleaning up
+* Proper sandbox (a suitable one is available on LuaForge)
+* ChunkBake assembler output format
+
+--
+
+ACKNOWLEDGEMENTS
+
+Thanks to the LuaForge people for hosting this.
+ChunkSpy was inspired by Nick Trout's vmmerge5.lua.
+Developed on SciTE http://www.scintilla.org/. Two thumbs up.
+
+--
+
+FEEDBACK
+
+Feedback and contributions are welcome. Your name will be acknowledged,
+as long as you are willing to comply with COPYRIGHT. If your material is
+self-contained, you can retain a copyright notice for those material in
+your own name, as long as you use the same Lua 5/MIT-style copyright.
+
+I am on dial-up, so I might not be able to reply immediately. My
+alternative e-mail address is: mkh AT pl DOT jaring DOT my
+
+Enjoy!!
+
+Kein-Hong Man (esq.)
+Kuala Lumpur
+Malaysia 20060313

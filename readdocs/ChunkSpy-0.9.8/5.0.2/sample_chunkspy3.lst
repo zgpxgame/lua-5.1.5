@@ -1,0 +1,96 @@
+; source chunk: sample.out
+; x86 standard (32-bit, little endian, doubles)
+
+; function [0] definition (level 1)
+; 0 upvalues, 0 params, 7 stacks
+.function  0 0 0 7
+.local  "a"  ; 0
+.local  "i"  ; 1
+.local  "(for limit)"  ; 2
+.local  "(for step)"  ; 3
+.local  "(for generator)"  ; 4
+.local  "(for state)"  ; 5
+.local  "i"  ; 6
+.const  1  ; 0
+.const  "b"  ; 1
+.const  "the quick brown fox\r\n"  ; 2
+.const  "c"  ; 3
+.const  10  ; 4
+.const  2  ; 5
+.const  "d"  ; 6
+
+; function [0] definition (level 2)
+; 1 upvalues, 0 params, 2 stacks
+.function  1 0 0 2
+.upvalue  "a"  ; 0
+.const  "b"  ; 0
+; (2)  function c() b = a a = b end
+[1] getupval   0   0        ; a
+[2] setglobal  0   0        ; b
+[3] getglobal  0   0        ; b
+[4] setupval   0   0        ; a
+[5] return     0   1
+; end of function
+
+; (1)  local a = 1; b = "the quick brown fox\r\n"
+[01] loadk      0   0        ; 1
+[02] loadk      1   2        ; "the quick brown fox\r\n"
+[03] setglobal  1   1        ; b
+; (2)  function c() b = a a = b end
+[04] closure    1   0        ; 1 upvalues
+[05] move       0   0
+[06] setglobal  1   3        ; c
+; (3)  c = nil; c = -a; c = not b
+[07] loadnil    1   1
+[08] setglobal  1   3        ; c
+[09] unm        1   0
+[10] setglobal  1   3        ; c
+[11] getglobal  1   1        ; b
+[12] not        1   1
+[13] setglobal  1   3        ; c
+; (4)  for i = 1, 10 do a = a + 2 c() end
+[14] loadk      1   0        ; 1
+[15] loadk      2   4        ; 10
+[16] loadk      3   0        ; 1
+[17] sub        1   1   3
+[18] jmp        3            ; to [22]
+[19] add        0   0   255  ; 2
+[20] getglobal  4   3        ; c
+[21] call       4   1   1
+[22] forloop    1   -4       ; to [19] if loop
+; (5)  a = {}; a[1] = false; b = a[1]
+[23] newtable   1   0   0    ; array=0, hash=0
+[24] move       0   1
+[25] loadbool   1   0   0    ; false
+[26] settable   0   250 1    ; 1
+[27] gettable   1   0   250  ; 1
+[28] setglobal  1   1        ; b
+; (6)  a = d..c..b; a = b == c; a = {1,2,}
+[29] getglobal  1   6        ; d
+[30] getglobal  2   3        ; c
+[31] getglobal  3   1        ; b
+[32] concat     0   1   3
+[33] getglobal  1   1        ; b
+[34] getglobal  2   3        ; c
+[35] eq         1   1   2    ; to [37] if false
+[36] jmp        1            ; to [38]
+[37] loadbool   0   0   1    ; false, to [39]
+[38] loadbool   0   1   0    ; true
+[39] newtable   1   2   0    ; array=2, hash=0
+[40] loadk      2   0        ; 1
+[41] loadk      3   5        ; 2
+[42] setlist    1   1        ; index 1 to 2
+[43] move       0   1
+; (7)  for i in b() do b = 1 end
+[44] getglobal  1   1        ; b
+[45] call       1   1   4
+[46] tforprep   1   2        ; to [49]
+[47] loadk      4   0        ; 1
+[48] setglobal  4   1        ; b
+[49] tforloop   1       0    ; to [51] if exit
+[50] jmp        -4           ; to [47]
+; (8)  return
+[51] return     0   1
+[52] return     0   1
+; end of function
+

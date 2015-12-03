@@ -1,0 +1,211 @@
+Changelog for ChunkSpy by Kein-Hong Man
+---------------------------------------
+
+2006-03-13  Kein-Hong Man  <khman@users.sf.net>
+
+	* test of 5.1 instructions completed, released new 5.1 guide:
+	"A No-Frills Introduction to Lua 5.1 VM Instructions" elsewhere
+	* 5.1/sample.out: recompiled using luac for Lua 5.1
+	* 5.1/sample_chunkspy*.lst: refresh to Lua 5.1 output
+	* COPYRIGHT: adjusted copyright date to 2006
+	* scite_syntax_highlight.properties: updated with 5.1 instructions
+	* OLD_NEWS: moved some news items here
+	* README: updated with information on Lua 5.1 support
+	* Version: 0.9.8
+
+2006-03-07  Kein-Hong Man  <khman@users.sf.net>
+
+	* 5.1/ChunkSpy.lua: fixed function start address display,
+	fixed DescString missing NUL, sample listing debugging done
+
+2006-02-22  Kein-Hong Man  <khman@users.sf.net>
+
+	* 5.1/ChunkSpy.lua: changed math.mod to %, removed table.getn
+	related code
+	* 5.1/ChunkSpy.lua: split up decoder functions into separate
+	load/display functions
+	* 5.1/ChunkSpy.lua: changed gfind -> gmatch
+	* 5.1/ChunkSpy.lua: rearranged decoding functions per 5.1
+	* 5.1/ChunkSpy.lua: updated opcode list, decoder
+	* 5.1/ChunkSpy.lua: updated chunk display code
+	* 5.1/ChunkSpy.lua: split decoder function into separate decoder
+	and display functions
+	* 5.1/ChunkSpy.lua: rearranged dumper output order
+	* 5.1/ChunkSpy.lua: debugged dumper and display, successfully
+	outputs sample listing
+
+2006-02-21  Kein-Hong Man  <khman@users.sf.net>
+
+	* 5.1-work6: renamed to 5.1
+	* Manifest*: updated 5.1-work6 -> 5.1
+
+2005-06-05  Kein-Hong Man  <khman@users.sf.net>
+
+	* 5.0.2/sample_chunkspy*.lst: refreshed files according to command
+	line used in README guide
+	* 5.1-work6/sample_chunkspy*.lst: likewise
+	* README-Win32-bin: added message on problem with running on Msys
+	* Manifest*: updated 5.1-work5 -> 5.1-work6
+	* Version: 0.9.7
+
+2005-06-05  Kein-Hong Man  <khman@users.sf.net>
+
+	* rename 5.1-work5 directory to 5.1-work6 for update
+	* 5.0.2/ChunkSpy.lua: changed version number, date
+	* 5.1-work6/ChunkSpy.lua: likewise
+	* 5.1-work6/ChunkSpy.lua: updated opcodes (+MOD,+SIZ,-TFORPREP)
+	* 5.1-work6/ChunkSpy.lua: added lastlinedefined to dump/undump;
+	renamed lineDefined to linedefined to match Lua sources
+	* 5.1-work6/ChunkSpy.lua (DescribeInst): updated instruction
+	opcode values, types, added/removed instructions
+	* 5.1-work6/ChunkSpy.lua: use string.reverse for endianness switch
+
+2005-04-14  Kein-Hong Man  <khman@users.sf.net>
+
+	* moved project to a Subversion repository
+	* changed shellbang to a more portable env
+
+2005-03-25  Kein-Hong Man  <khman@users.sf.net>
+
+	* rename 5.1-work4 directory to 5.1-work5 for update
+	* 5.1-work5/ChunkSpy.lua: updated, changed OP_NEWTABLE handling
+	* Version: 0.9.6
+
+2005-03-03  Kein-Hong Man  <khman@users.sf.net>
+
+	* 5.1-work4/ChunkSpy.lua: completed update, tested, usable
+	* scite_syntax_highlight.properties: added 5.1wk4 stuff
+	* Version: 0.9.5
+
+2005-03-02  Kein-Hong Man  <khman@users.sf.net>
+
+	* Created 5.0.2 directory, some files to 5.0.2/
+	* */ChunkSpy.lua: updated display messages
+	* 5.0.2/ChunkSpy.lua: added _VERSION check
+	* 5.1-work4/ChunkSpy.lua: modifying for Lua 5.1 (work4)
+
+2005-02-22  Kein-Hong Man  <khman@users.sf.net>
+
+	* (LoadString): error() call bug
+	* (LoadUpvalues): catch empty strings in upvalue table
+
+2005-02-07  Kein-Hong Man  <khman@users.sf.net>
+
+	* scite_syntax_highlight.properties: updated to highlight
+	ChunkBake assembly code
+
+2004-11-21  Kein-Hong Man  <khman@users.sf.net>
+
+	* (main): added arg[0] test to adjust usage information when
+	the binary version of ChunkSpy is being executed
+	* (DescribeInst): added instruction comments for CLOSURE,
+	SETLIST, SETLISTO, NEWTABLE, EQ, LT, LE, TEST
+	* created sources for building a self-contained win32
+	binary, with Unix-compatible sources
+	* Version: 0.9.4
+
+2004-11-19  Kein-Hong Man  <khman@users.sf.net>
+
+	* changed archive format to conform to Unix style, with all
+	release files in a proper subdirectory with version
+
+2004-11-14  Kein-Hong Man  <khman@users.sf.net>
+
+	* added -- option to stop processing options
+	* Version: 0.9.3
+
+2004-11-13  Kein-Hong Man  <khman@users.sf.net>
+
+	* (WriteBinaryChunk): preliminary version completed, testing
+	* added "big endian int" to profile list, for testing
+	* (EncodeInst): new instruction encoder for rewriting
+	* (LoadCode): table both instruction formats (raw/cooked)
+	instead of just raw (string) format (for EncodeInst)
+	* added --rewrite "plat" option, rewrite binary chunks
+	* (WriteBinaryChunk): fixed bug with zero-length string consts
+	* added handling of strings with size_t of 0 (function source
+	string handling)
+	* (SourceInit): added handling of filenames in function source
+	strings that don't begin with a '@' character
+	* (convert_to): fixed bug converting negatively-signed doubles
+	and singles to data strings, fixed bug converting zeros
+	a data string
+	* (ChunkSpy_DoFiles): added '@' prefix handling for --source built
+	binary chunks to be consistent with luac behaviour
+	* removed some func.source in error messages, because it is
+	appears to be only defined for the root function
+	* added --run option, run non-standard binary chunks
+
+2004-11-12  Kein-Hong Man  <khman@users.sf.net>
+
+	* (convert_from): renamed conversion function table from
+	convert to convert_from
+	* (convert_to): added reverse conversion function table and
+	associated functions, for binary chunk rewrites
+
+2004-11-11  Kein-Hong Man  <khman@users.sf.net>
+
+	* changed name of default profile to "x86 standard"
+	* (ChunkSpy_Sample): localize ok, msg variables
+	* (ChunkSpy): added default setting of MAX_STACK value when
+	in auto-detect mode
+	* (SetProfile): added SetProfile to handle the setting of
+	different configuration sets
+	* (OutputInit): changed output filemode to "wb", since it
+	will be used for writing binary chunks as well
+
+2004-11-10  Kein-Hong Man  <khman@users.sf.net>
+
+	* (ChunkSpy): added range test for SIZE_OP, in case custom
+	binary chunks gets too adventurous
+
+2004-11-09  Kein-Hong Man  <khman@users.sf.net>
+
+	* (ChunkSpy_Interact): flush stdout in interactive mode
+	  (problem using --interact on msys/rxvt/win32)
+
+2004-11-09  Kein-Hong Man  <khman@users.sf.net>
+
+	* (ChunkSpy_Interact): added interactive mode (--interact)
+	* added --brief, a less verbose mode
+	* Version: 0.9.2
+
+2004-11-08  Kein-Hong Man  <khman@users.sf.net>
+
+	* added -o <file> output file option, code to redirect
+	* (LoadFunction): added function numbering for reference
+	* (ChunkSpy_DoFiles): adjusted file/chunk handling
+	* (CompileSourceFile): added source file compilation into
+	  binary chunk then processing into a listing (--source)
+
+2004-11-07  Kein-Hong Man  <khman@users.sf.net>
+
+	* added source listing merging (automatic)
+	* added auto-detection of different configurations (--auto)
+	* (LoadLocals): listing display tweak (indexing)
+	* code review, tweak display, instruction comments
+	* preparing for release: README file, cleanup, etc.
+	* Version: 0.9.1
+
+2004-11-06  Kein-Hong Man  <khman@users.sf.net>
+
+	* pre-release fixes based on code review, including:
+	* (LoadBlock): added byte reverse for big-endian platforms
+	* (EscapeString): escaping strings handles \\, \", and \x
+	  style notation, where x is a character
+	* (CommentRK): fixed interpretation of RK(x) field
+	* (to_double, to_single): added handling for float zero
+	* (convert): added table for customizable number conversion
+	* (convert["int"], convert["long long"]): added function to
+	  convert integers (int/long long) from a string of bytes
+	* added --stats option and associated code
+	* (ChunkSpy_Sample): added code to exercise opcodes
+
+2004-11-05  Kein-Hong Man  <khman@users.sf.net>
+
+	* prototype sufficiently cooked
+	* overhaul prototype; preliminary working script complete
+
+2004-10-18  Kein-Hong Man  <khman@users.sf.net>
+
+	* start of development, with notes on l[un]dump.* done

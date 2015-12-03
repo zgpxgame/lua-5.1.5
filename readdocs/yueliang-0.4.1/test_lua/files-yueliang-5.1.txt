@@ -1,0 +1,19 @@
+# these are yueliang files for 5.1.x
+
+test_scripts-5.1.lua
+
+../orig-5.1.3/lzio.lua
+../orig-5.1.3/ldump.lua
+../orig-5.1.3/lopcodes.lua
+../orig-5.1.3/llex.lua
+../orig-5.1.3/lparser.lua
+../orig-5.1.3/lcode.lua
+../orig-5.1.3/luac.lua
+
+../orig-5.1.3/test/test_lzio.lua
+../orig-5.1.3/test/test_ldump.lua
+../orig-5.1.3/test/test_llex.lua
+../orig-5.1.3/test/test_lparser.lua
+../orig-5.1.3/test/test_number.lua
+../orig-5.1.3/test/bench_llex.lua
+

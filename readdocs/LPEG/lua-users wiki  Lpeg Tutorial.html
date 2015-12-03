@@ -1,0 +1,724 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!-- saved from url=(0038)http://lua-users.org/wiki/LpegTutorial -->
+<html slick-uniqueid="3" hc="a0" hcx="0"><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252"><title>lua-users wiki: Lpeg Tutorial</title>
+<style type="text/css">
+
+BODY {
+    background: white;
+    color: navy;
+}
+
+A:link { color: #DF6C00 }
+A:active, A:visited { color: maroon }
+
+/* try to match the text style in the lua-users logo */
+a.nav {
+    text-decoration: none;
+    color: navy;
+    font-weight: bold;
+    font-family: Arial, sans-serif;
+    font-size: 22px;
+}
+
+BODY.preview {
+    background: url(/images/preview-bg.png) white;
+}
+
+pre.code { color: black; }
+span.comment { color: #00a000; }
+span.string  { color: #009090; }
+span.keyword { color: navy; font-weight: bold; }
+span.library { color: #900090; }
+
+/* In case of block indent (implemented with table), add cue at left border. */
+dd pre.code {
+    border-left: 1px dotted maroon;
+    margin-left: -1em;
+    padding-left: 1em;
+}
+
+</style>
+</head>
+<body youdao="bind"><table width="100%" border="0"> <tbody><tr><td align="left" width="100%"><h1>Lpeg Tutorial</h1></td><td align="right">
+<input type="hidden" name="action" value="search"><input type="text" name="string" size="20" style="" id="search_query1"><input type="hidden" name="title" value="1"><input type="submit" name=".submit" value="Search"><input type="hidden" name="body" value="on"></form></td></tr> </tbody></table>
+<br clear="all">
+<h2>Simple Matching</h2>
+<p>
+LPeg is a powerful notation for matching text data, which is more capable than Lua string patterns and standard regular expressions.  However, like any language you need to know the basic words and how to combine them.
+</p><p>
+The best way to learn is to play with patterns in an interactive session, first by defining some shortcuts:
+</p><p>
+</p><pre class="code">$ lua -llpeg
+Lua 5.1.4  Copyright (C) 1994-2008 Lua.org, PUC-Rio
+&gt; match = lpeg.match <span class="comment">-- match a pattern against a string</span>
+&gt; P = lpeg.P <span class="comment">-- match a string literally</span>
+&gt; S = lpeg.S  <span class="comment">-- match anything in a set</span>
+&gt; R = lpeg.R  <span class="comment">-- match anything in a range</span>
+</pre>
+
+<p>
+If you dont' want to create shorcuts manually, you can do this:
+</p><p>
+</p><pre class="code">&gt; <span class="library">setmetatable</span>(_ENV <span class="keyword">or</span> <span class="library">_G</span>, { __index = lpeg <span class="keyword">or</span> <span class="library">require</span><span class="string">"lpeg"</span> })
+    </pre>
+
+<p>
+I don't recommend doing this in serious code, but to explore LPeg, it is very convenient.
+</p><p>
+Matches occur against the <em>start</em> of the string, and successful matches return the position immediately after the successful match, or <code>nil</code> if unsuccesful. (Here I'm using the fact that <code>f'x'</code> is equivalent to <code>f('x')</code> in Lua; using single quotes has the same meaning as double quotes.)
+</p><p>
+</p><pre class="code">&gt; = match(P<span class="string">'a'</span>,<span class="string">'aaa'</span>)
+2
+&gt; = match(P<span class="string">'a'</span>,<span class="string">'123'</span>)
+<span class="keyword">nil</span>
+</pre>
+
+<p>
+It works like <code>string.find</code>, except it only returns one index.
+</p><p>
+You can match against <em>ranges</em> or <em>sets</em> of characters:
+</p><p>
+</p><pre class="code">&gt; = match(R<span class="string">'09'</span>,<span class="string">'123'</span>)
+2
+&gt; =  match(S<span class="string">'123'</span>,<span class="string">'123'</span>)
+2
+</pre>
+
+<p>
+Matching more than one item is done with the <code>^</code> operator. In this case, the match is equivalent to the Lua pattern '^a+' - one or more occurrances of 'a':
+</p><p>
+</p><pre class="code">&gt; = match(P<span class="string">'a'</span>^1,<span class="string">'aaa'</span>)
+4
+</pre>
+
+<p>
+Combining patterns in order is done with the <code>*</code> operator. This is equivalent to '^ab*' - one 'a' followed by zero or more 'b's:
+</p><p>
+</p><pre class="code">&gt; = match(P<span class="string">'a'</span>*P<span class="string">'b'</span>^0,<span class="string">'abbc'</span>)
+4
+</pre>
+
+<p>
+So far, lpeg is giving us a more verbose way of expressing regular expressions, but these patterns are <em>composible</em> - they can be easily built up from simpler patterns, without awkward string operations. In this way, lpeg patterns can be made to be easier to read than their equivalent regular expressions. Note that you can often leave out an explicit <code>P</code> call when constructing patterns, if one of the arguments is already a pattern:
+</p><p>
+</p><pre class="code">&gt; maybe_a = P<span class="string">'a'</span>^-1  <span class="comment">-- one or zero matches of 'a'</span>
+&gt; match_ab = maybe_a * <span class="string">'b'</span>
+&gt; = match(match_ab, <span class="string">'ab'</span>)
+3
+&gt; =  match(match_ab, <span class="string">'b'</span>)
+2
+&gt; =  match(match_ab, <span class="string">'aaab'</span>)
+<span class="keyword">nil</span>
+</pre>
+
+<p>
+The <code>+</code> operator means <em>either</em> one or the other pattern:
+</p><p>
+</p><pre class="code">&gt; either_ab = (P<span class="string">'a'</span> + P<span class="string">'b'</span>)^1 <span class="comment">-- sequence of either 'a' or 'b'</span>
+&gt; = either_ab:match <span class="string">'aaa'</span>
+4
+&gt; =  either_ab:match <span class="string">'bbaa'</span>
+5
+</pre>
+
+<p>
+Note that the pattern object has a <code>match</code> method!
+</p><p>
+Of course, <code>S'ab'^1</code> would be a shorter way to say this, but the arguments here can be arbitary patterns. 
+</p><p>
+</p><h2>Basic Captures</h2>
+<p>
+Getting the index after a match is all very well, and you can then use <code>string.sub</code> to extract the strings. But there are ways of explicitly asking for <em>captures</em>:
+</p><p>
+</p><pre class="code">&gt; C = lpeg.C  <span class="comment">-- captures a match</span>
+&gt; Ct = lpeg.Ct <span class="comment">-- a table with all captures from the pattern</span>
+</pre>
+
+<p>
+The first is equivalent to how '(...)' is used in Lua patterns (or '\(...\)' in regular expressions)
+</p><p>
+</p><pre class="code">&gt; digit = R<span class="string">'09'</span> <span class="comment">-- anything from '0' to '9'</span>
+&gt; digits = digit^1 <span class="comment">-- a sequence of at least one digit</span>
+&gt; cdigits= C(digits)  <span class="comment">-- capture digits</span>
+&gt; = cdigits:match <span class="string">'123'</span>
+123
+</pre>
+
+<p>
+So to get the string value, enclose the pattern in <code>C</code>.
+</p><p>
+This pattern doesn't cover a general integer, which may have a '+' or '-' up front:
+</p><p>
+</p><pre class="code">&gt; int = S<span class="string">'+-'</span>^-1 * digits
+&gt; = match(C(int),<span class="string">'+23'</span>)
++23
+</pre>
+
+<p>
+Unlike with Lua patterns or regular expressions, you don't have to worry about escaping 'magic' characters - every character in a string stands for itself: '(','+','*', etc are just their ASCII equilvalents.
+</p><p>
+A special kind of capture is provided by the <code>/</code> operator - it passes the captured string through a function or a table. Here I'm adding one to the result, just to show that the result has been converted into a number with <code>tonumber</code>:
+</p><p>
+</p><pre class="code">&gt; =  match(int/<span class="library">tonumber</span>,<span class="string">'+123'</span>) + 1
+124
+</pre>
+
+<p>
+Note that multiple captures can be returned by a match, just like <code>string.match</code>. This is equivalent to '^(a+)(b+)':
+</p><p>
+</p><pre class="code">&gt; = match(C(P<span class="string">'a'</span>^1) * C(P<span class="string">'b'</span>^1), <span class="string">'aabbbb'</span>)
+aa	bbbb
+</pre>
+
+<p>
+</p><h2>Building more complicated Patterns</h2>
+<p>
+Consider general floating-point numbers:
+</p><p>
+</p><pre class="code">&gt; <span class="keyword">function</span> maybe(p) <span class="keyword">return</span> p^-1 <span class="keyword">end</span>
+&gt; digits = R<span class="string">'09'</span>^1
+&gt; mpm = maybe(S<span class="string">'+-'</span>)
+&gt; dot = <span class="string">'.'</span>
+&gt; exp = S<span class="string">'eE'</span>
+&gt; float = mpm * digits * maybe(dot*digits) * maybe(exp*mpm*digits)
+&gt; = match(C(float),<span class="string">'2.3'</span>)
+2.3
+&gt; = match(C(float),<span class="string">'-2'</span>)
+-2
+&gt; = match(C(float),<span class="string">'2e-02'</span>)
+2e-02
+</pre>
+
+<p>
+This lpeg pattern is <em>easier</em> to read than the regular expression equivalent '[-+]?[0-9]+\.?[0-9]+([eE][+-]?[0-9]+)?'; shorter is always better! One reason is that we can work with patterns as <em>expressions</em>: factor out common patterns, write functions for convenience and clarity, etc.  Note that there is no penalty for writing things out in this fashion; lpeg remains a very fast way to parse text!
+</p><p>
+More complicated structures can be composed from these building blocks. Consider the task of parsing a list of floating point numbers. A list is a number followed by zero or more groups consisting of a comma and a number:
+</p><p>
+</p><pre class="code">&gt; listf = C(float) * (<span class="string">','</span> * C(float))^0
+&gt; = listf:match <span class="string">'2,3,4'</span>
+2	3	4
+</pre>
+
+<p>
+That's cool, but it would be even cooler to have this as an actual list. This is where <code>lpeg.Ct</code> comes in;  it collects all the captures within a pattern into a table.
+</p><p>
+</p><pre class="code">= match(Ct(listf),<span class="string">'1,2,3'</span>)
+<span class="library">table</span>: 0x84fe628
+</pre>
+
+<p>
+Stock Lua does not pretty-print tables, but you can use [? Microlight] for this job:
+</p><p>
+</p><pre class="code">&gt; <span class="library">tostring</span> = <span class="library">require</span> <span class="string">'ml'</span>.tstring
+&gt; = match(Ct(listf),<span class="string">'1,2,3'</span>)
+{<span class="string">"1"</span>,<span class="string">"2"</span>,<span class="string">"3"</span>}
+</pre>
+
+<p>
+The values are still strings. It's better to write <code>listf</code> so that it converts its captures:
+</p><p>
+</p><pre class="code">&gt; floatc = float/<span class="library">tonumber</span>
+&gt; listf = floatc * (<span class="string">','</span> * floatc)^0
+</pre>
+
+<p>
+This way of capturing lists is very general, since you can put <em>any</em> expression that captures in the place of <code>floatc</code>.  But this list pattern is still too restrictive, because generally we want to ignore whitespace
+</p><p>
+</p><pre class="code">&gt; sp = P<span class="string">' '</span>^0  <span class="comment">-- zero or more spaces (like '%s*')</span>
+&gt; <span class="keyword">function</span> space(pat) <span class="keyword">return</span> sp * pat * sp <span class="keyword">end</span> <span class="comment">-- surrond a pattern with optional space</span>
+&gt; floatc = space(float/<span class="library">tonumber</span>) 
+&gt; listc = floatc * (<span class="string">','</span> * floatc)^0
+&gt; =  match(Ct(listc),<span class="string">' 1,2, 3'</span>)
+{1,2,3}
+</pre>
+
+<p>
+It's a matter of taste, but here I prefer to allow optional space around the <em>items</em>, rather than allowing space specifically around the <em>delimiter</em> ','.
+</p><p>
+With lpeg, we can be programmers again with pattern matching, and reuse patterns:
+</p><p>
+</p><pre class="code"><span class="keyword">function</span> list(pat)
+    pat = space(pat)
+    <span class="keyword">return</span> pat * (<span class="string">','</span> * pat)^0
+<span class="keyword">end</span>
+</pre>
+
+<p>
+So, a list of identifiers (according to the usual rules):
+</p><p>
+</p><pre class="code">&gt; idenchar = R(<span class="string">'AZ'</span>,<span class="string">'az'</span>)+P<span class="string">'_'</span>
+&gt; iden = idenchar * (idenchar+R<span class="string">'09'</span>)^0
+&gt; =  list(C(iden)):match <span class="string">'hello, dolly, _x, s23'</span>
+<span class="string">"hello"</span>	<span class="string">"dolly"</span>	<span class="string">"_x"</span>	<span class="string">"s23"</span>
+</pre>
+
+<p>
+Using explicit ranges seems old-fashioned and error-prone. A more portable solution is to use the lpeg equivalent of <em>character classes</em>, which are by definition locale-independent:
+</p><p>
+</p><pre class="code">&gt; l = {}
+&gt; lpeg.locale(l)
+&gt; <span class="keyword">for</span> k <span class="keyword">in</span> <span class="library">pairs</span>(l) <span class="keyword">do</span> <span class="library">print</span>(k) <span class="keyword">end</span>
+<span class="string">"punct"</span>
+<span class="string">"alpha"</span>
+<span class="string">"alnum"</span>
+<span class="string">"digit"</span>
+<span class="string">"graph"</span>
+<span class="string">"xdigit"</span>
+<span class="string">"upper"</span>
+<span class="string">"space"</span>
+<span class="string">"print"</span>
+<span class="string">"cntrl"</span>
+<span class="string">"lower"</span>
+&gt; iden =  (l.alpha+P<span class="string">'_'</span>) * (l.alnum+P<span class="string">'_'</span>)^0
+</pre><span id="hc_extension_svg_filters" hidden=""><svg xmlns="http://www.w3.org/2000/svg" version="1.1"><defs><filter id="hc_extension_off"><fecomponenttransfer><fefuncr type="table" tableValues="0 1"></fefuncr><fefuncg type="table" tableValues="0 1"></fefuncg><fefuncb type="table" tableValues="0 1"></fefuncb></fecomponenttransfer></filter><filter id="hc_extension_highcontrast"><fecomponenttransfer><fefuncr type="gamma" exponent="3.0"></fefuncr><fefuncg type="gamma" exponent="3.0"></fefuncg><fefuncb type="gamma" exponent="3.0"></fefuncb></fecomponenttransfer></filter><filter id="hc_extension_highcontrast_back"><fecomponenttransfer><fefuncr type="gamma" exponent="0.33"></fefuncr><fefuncg type="gamma" exponent="0.33"></fefuncg><fefuncb type="gamma" exponent="0.33"></fefuncb></fecomponenttransfer></filter><filter id="hc_extension_grayscale"><fecolormatrix type="matrix" values="0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0 0 0 1 0"></fecolormatrix><fecomponenttransfer><fefuncr type="gamma" exponent="3"></fefuncr><fefuncg type="gamma" exponent="3"></fefuncg><fefuncb type="gamma" exponent="3"></fefuncb></fecomponenttransfer></filter><filter id="hc_extension_grayscale_back"><fecomponenttransfer><fefuncr type="gamma" exponent="0.33"></fefuncr><fefuncg type="gamma" exponent="0.33"></fefuncg><fefuncb type="gamma" exponent="0.33"></fefuncb></fecomponenttransfer></filter><filter id="hc_extension_invert"><fecomponenttransfer><fefuncr type="gamma" amplitude="-1" exponent="3" offset="1"></fefuncr><fefuncg type="gamma" amplitude="-1" exponent="3" offset="1"></fefuncg><fefuncb type="gamma" amplitude="-1" exponent="3" offset="1"></fefuncb></fecomponenttransfer></filter><filter id="hc_extension_invert_back"><fecomponenttransfer><fefuncr type="table" tableValues="1 0"></fefuncr><fefuncg type="table" tableValues="1 0"></fefuncg><fefuncb type="table" tableValues="1 0"></fefuncb></fecomponenttransfer><fecomponenttransfer><fefuncr type="gamma" exponent="1.7"></fefuncr><fefuncg type="gamma" exponent="1.7"></fefuncg><fefuncb type="gamma" exponent="1.7"></fefuncb></fecomponenttransfer></filter><filter id="hc_extension_invert_grayscale"><fecolormatrix type="matrix" values="0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0 0 0 1 0"></fecolormatrix><fecomponenttransfer><fefuncr type="gamma" amplitude="-1" exponent="3" offset="1"></fefuncr><fefuncg type="gamma" amplitude="-1" exponent="3" offset="1"></fefuncg><fefuncb type="gamma" amplitude="-1" exponent="3" offset="1"></fefuncb></fecomponenttransfer></filter><filter id="hc_extension_yellow_on_black"><fecomponenttransfer><fefuncr type="gamma" amplitude="-1" exponent="3" offset="1"></fefuncr><fefuncg type="gamma" amplitude="-1" exponent="3" offset="1"></fefuncg><fefuncb type="gamma" amplitude="-1" exponent="3" offset="1"></fefuncb></fecomponenttransfer><fecolormatrix type="matrix" values="0.3 0.5 0.2 0 0 0.3 0.5 0.2 0 0 0 0 0 0 0 0 0 0 1 0"></fecolormatrix></filter><filter id="hc_extension_yellow_on_black_back"><fecomponenttransfer><fefuncr type="table" tableValues="1 0"></fefuncr><fefuncg type="table" tableValues="1 0"></fefuncg><fefuncb type="table" tableValues="1 0"></fefuncb></fecomponenttransfer><fecomponenttransfer><fefuncr type="gamma" exponent="0.33"></fefuncr><fefuncg type="gamma" exponent="0.33"></fefuncg><fefuncb type="gamma" exponent="0.33"></fefuncb></fecomponenttransfer></filter></defs></svg></span>
+
+<p>
+Given this definition of <code>list</code>, it's easy to define a simple subset of the common CSV format, where each record is a list separated by a linefeed:
+</p><p>
+</p><pre class="code">&gt; rlistf =  list(float/<span class="library">tonumber</span>)
+&gt; csv = Ct( (Ct(listf)+<span class="string">'\n'</span>)^1 )
+&gt; =  csv:match <span class="string">'1,2.3,3\n10,20, 30\n'</span>
+{{1,2.3,3},{10,20,30}}
+</pre>
+
+<p>
+One good reason to learn lpeg is that it performs very satisfactorily. This pattern is a <em>lot</em> faster than parsing the data with Lua string matching.
+</p><p>
+</p><h2>String Substitution</h2>
+<p>
+I will show that lpeg can do all that <code>string.gsub</code> can do, and more generally and flexibly.
+</p><p>
+One operator that we have not used yet is <code>-</code>, which means 'either/or'. Consider the problem of matching double-quoted strings. In the simplest case, they are a double-quote followed by any characters which are not a double-quote, followed by a closing double-quote.  <code>P(1)</code> matches <em>any</em> single character, i.e. it is the equivalent of '.' in string patterns.  A string may be empty, so we match zero or more non-quote characters:
+</p><p>
+</p><pre class="code">&gt; Q = P<span class="string">'"'</span>
+&gt; str = Q * (P(1) - Q)^0 * Q
+&gt; = C(str):match <span class="string">'"hello"'</span>
+<span class="string">"\"hello\""</span>
+</pre>
+
+<p>
+Or you may want to extract the contents of the string, without quotes. In this context, just using <code>1</code> instead of <code>P(1)</code> is not ambiguous, and in fact this is how you will usually see this 'any x which is not a P' pattern:
+</p><p>
+</p><pre class="code">&gt; str2 = Q * C((1 - Q)^0) * Q
+&gt; = str2:match <span class="string">'"hello"'</span>
+<span class="string">"hello"</span>
+</pre>
+
+<p>
+This pattern is obviously generalizable; often the terminating pattern is not the same as the final pattern:
+</p><p>
+</p><pre class="code"><span class="keyword">function</span> extract_quote(openp,endp)
+    openp = P(openp)
+    endp = endp <span class="keyword">and</span> P(endp) <span class="keyword">or</span> openp
+    <span class="keyword">local</span> upto_endp = (1 - endp)^1 
+    <span class="keyword">return</span> openp * C(upto_endp) * endp
+<span class="keyword">end</span>
+</pre>
+
+<p>
+</p><pre class="code">&gt; <span class="keyword">return</span>  extract_quote(<span class="string">'('</span>,<span class="string">')'</span>):match <span class="string">'(and more)'</span>
+<span class="string">"and more"</span>
+&gt; = extract_quote(<span class="string">'[['</span>,<span class="string">']]'</span>):match <span class="string">'[[long string]]'</span>
+<span class="string">"long string"</span>
+</pre>
+
+<p>
+Now consider translating Markdown <code>code</code> (back-slash enclosed text) into the format understood by the Lua wiki (double-brace enclosed text). The naive way is to extract the string and concatenate the result, but this is clumsy and (as we will see) limit our options tremendously.
+</p><p>
+</p><pre class="code"><span class="keyword">function</span> subst(openp,repl,endp)
+    openp = P(openp)
+    endp = endp <span class="keyword">and</span> P(endp) <span class="keyword">or</span> openp
+    <span class="keyword">local</span> upto_endp = (1 - endp)^1 
+    <span class="keyword">return</span> openp * C(upto_endp)/repl * endp
+<span class="keyword">end</span>
+</pre>
+
+<p>
+</p><pre class="code">&gt; =  subst(<span class="string">'`'</span>,<span class="string">'{{%1}}'</span>):match <span class="string">'`code`'</span>
+<span class="string">"{{code}}"</span>
+&gt; =  subst(<span class="string">'_'</span>,<span class="string">"''%1''"</span>):match <span class="string">'_italics_'</span>
+<span class="string">"''italics''"</span>
+</pre>
+
+<p>
+We've come across the capture-processing operator <code>/</code> before, using <code>tonumber</code> to convert numbers. It also understands strings in a very similar format to <code>string.gsub</code>, where <code>%n</code> means the n-th capture.
+</p><p>
+This operation can be expressed exactly as:
+</p><p>
+</p><pre class="code">&gt; = <span class="library">string.gsub</span>(<span class="string">'_italics_'</span>,<span class="string">'^_([^_]+)_'</span>,<span class="string">"''%1''"</span>)
+<span class="string">"''italics''"</span>
+</pre>
+
+<p>
+But the advantage is that we don't have to build up a custom string pattern and worry about escaping 'magic' characters like '(' and ').
+</p><p>
+<code>lpeg.Cs</code> is a <em>substitution capture</em>, and it provides a more general module of global string substitution. In the lpeg manual, there is this equivalent to <code>string.gsub</code>:
+</p><p>
+</p><pre class="code"><span class="keyword">function</span> gsub (s, patt, repl)
+    patt = P(patt)
+    <span class="keyword">local</span> p = Cs ((patt / repl + 1)^0)
+    <span class="keyword">return</span> p:match(s)
+<span class="keyword">end</span>
+
+&gt; =  gsub(<span class="string">'hello dog, dog!'</span>,<span class="string">'dog'</span>,<span class="string">'cat'</span>)
+<span class="string">"hello cat, cat!"</span>
+</pre>
+
+<p>
+To understand the difference, here's that pattern using plain <code>C</code>:
+</p><p>
+</p><pre class="code">&gt; p = C((P<span class="string">'dog'</span>/<span class="string">'cat'</span> + 1)^0)
+&gt; = p:match <span class="string">'hello dog, dog!'</span>
+<span class="string">"hello dog, dog!"</span>	<span class="string">"cat"</span>	<span class="string">"cat"</span>
+</pre>
+
+<p>
+The <code>C</code> here just captures the whole match, and each '/' adds a new capture with the value of the replacement string. 
+</p><p>
+With <code>Cs</code>, <em>everything</em> gets captured, and a string is built out of all the captures. Some of those captures get modified by '/', and so we have substitutions.  
+</p><p>
+In Markdown, block quoted lines begin with '&gt; '.
+</p><p>
+</p><pre class="code">lf = P<span class="string">'\n'</span>
+rest_of_line_nl = C((1 - lf)^0*lf)         <span class="comment">-- capture chars upto \n</span>
+quoted_line = <span class="string">'&gt; '</span>*rest_of_line_nl       <span class="comment">-- block quote lines start with '&gt; '</span>
+<span class="comment">-- collect the quoted lines and put inside [[[..]]]</span>
+quote = Cs (quoted_line^1)/<span class="string">"[[[\n%1]]]\n"</span>
+
+&gt; = quote:match <span class="string">'&gt; hello\n&gt; dolly\n'</span>
+<span class="string">"[[[
+&gt; hello
+&gt; dolly
+]]]
+"</span>
+</pre>
+
+<p>
+That's not quite right - <code>Cs</code> captures everything, including the '&gt; '. But we can force some captures to return empty strings:
+}}}
+</p><p>
+</p><pre class="code"><span class="keyword">function</span> empty(p)
+    <span class="keyword">return</span> C(p)/<span class="string">''</span>
+<span class="keyword">end</span>
+
+quoted_line = empty (<span class="string">'&gt; '</span>) * rest_of_line_nl
+...
+</pre>
+
+<p>
+Now things will work correctly!
+</p><p>
+Here is the program used to convert this document from Markdown to Lua wiki format:
+</p><p>
+</p><pre class="code"><span class="keyword">local</span> lpeg = <span class="library">require</span> <span class="string">'lpeg'</span>
+
+<span class="keyword">local</span> P,S,C,Cs,Cg = lpeg.P,lpeg.S,lpeg.C,lpeg.Cs,lpeg.Cg
+
+<span class="keyword">local</span> test = <span class="string">[[
+## A title
+
+here _we go_ and `a:bonzo()`:
+
+    one line
+    two line
+    three line
+       
+and `more_or_less_something`
+
+[A reference](http://bonzo.dog)
+
+&gt; quoted
+&gt; lines
+ 
+]]</span>
+
+<span class="keyword">function</span> subst(openp,repl,endp)
+    openp = P(openp)  <span class="comment">-- make sure it's a pattern</span>
+    endp = endp <span class="keyword">and</span> P(endp) <span class="keyword">or</span> openp
+    <span class="comment">-- pattern is 'bracket followed by any number of non-bracket followed by bracket'</span>
+    <span class="keyword">local</span> contents = C((1 - endp)^1)
+    <span class="keyword">local</span> patt = openp * contents * endp    
+    <span class="keyword">if</span> repl <span class="keyword">then</span> patt = patt/repl <span class="keyword">end</span>
+    <span class="keyword">return</span> patt
+<span class="keyword">end</span>
+
+<span class="keyword">function</span> empty(p)
+    <span class="keyword">return</span> C(p)/<span class="string">''</span>
+<span class="keyword">end</span>
+
+lf = P<span class="string">'\n'</span>
+rest_of_line = C((1 - lf)^1)
+rest_of_line_nl = C((1 - lf)^0*lf)
+
+<span class="comment">-- indented code block</span>
+indent = P<span class="string">'\t'</span> + P<span class="string">'    '</span>
+indented = empty(indent)*rest_of_line_nl
+<span class="comment">-- which we'll assume are Lua code</span>
+block = Cs(indented^1)/<span class="string">'    [[[!Lua\n%1]]]\n'</span>
+
+<span class="comment">-- use &gt; to get simple quoted block</span>
+quoted_line = empty(<span class="string">'&gt; '</span>)*rest_of_line_nl 
+quote = Cs (quoted_line^1)/<span class="string">"[[[\n%1]]]\n"</span>
+ 
+code = subst(<span class="string">'`'</span>,<span class="string">'{{%1}}'</span>)
+italic = subst(<span class="string">'_'</span>,<span class="string">"''%1''"</span>)
+bold = subst(<span class="string">'**'</span>,<span class="string">"'''%1'''"</span>)
+rest_of_line = C((1 - lf)^1)
+title1 = P<span class="string">'##'</span> * rest_of_line/<span class="string">'=== %1 ==='</span>
+title2 = P<span class="string">'###'</span> * rest_of_line/<span class="string">'== %1 =='</span>
+
+url = (subst(<span class="string">'['</span>,<span class="keyword">nil</span>,<span class="string">']'</span>)*subst(<span class="string">'('</span>,<span class="keyword">nil</span>,<span class="string">')'</span>))/<span class="string">'[%2 %1]'</span>
+ 
+item = block + title1 + title2 + code + italic + bold + quote + url + 1
+text = Cs(item^1)
+
+<span class="keyword">if</span> arg[1] <span class="keyword">then</span>
+    <span class="keyword">local</span> f = <span class="library">io.open</span>(arg[1])
+    test = f:read <span class="string">'*a'</span>
+    f:close()
+<span class="keyword">end</span>
+
+<span class="library">print</span>(text:match(test))
+</pre>
+
+<p>
+Due to an escaping problem with this Wiki, I had to substitute '[' for '{', etc in this source. Be warned!
+</p><p>
+<a href="http://lua-users.org/wiki/SteveDonovan">SteveDonovan</a>,  12 June 2012
+</p><p>
+</p><hr><h2>Group and back captures</h2>
+<p>
+</p><p>
+This section will dissect the behavior of group and back captures (<code>Cg()</code> and <code>Cb()</code> respectively).
+</p><p>
+Group captures (hereafter "groups") come in two flavors: named and anonymous.
+</p><p>
+</p><pre class="code">    Cg(C<span class="string">"baz"</span> * C<span class="string">"qux"</span>, <span class="string">"name"</span>) <span class="comment">-- named group.</span>
+
+    Cg(C<span class="string">"foo"</span> * C<span class="string">"bar"</span>)         <span class="comment">-- anonymous group.</span>
+    </pre>
+
+<p>
+Let's first get the easy one out of the way: named groups inside table captures.
+</p><pre class="code">    Ct(Cc<span class="string">"foo"</span> * Cg(Cc<span class="string">"bar"</span> * Cc<span class="string">"baz"</span>, <span class="string">"TAG"</span>)* Cc<span class="string">"qux"</span>):match<span class="string">""</span> 
+    <span class="comment">--&gt; { "foo", "qux", TAG = "bar" }</span>
+    </pre>
+
+In a table capture, the value of the first capture inside the group (<code>"bar"</code>) is assigned to the corresponding key (<code>"TAG"</code>) in the table. As you can see, <code>Cc"baz"</code> got lost in the process. The label must be a string (or a number that will be automatically converted to a string).
+<p>
+Note that the group must be a direct child of the table, otherwise, the table capture will not handle it:
+</p><pre class="code">    Ct(C(Cg(1,<span class="string">"foo"</span>))):match<span class="string">"a"</span>
+    <span class="comment">--&gt; {"a"}</span>
+    </pre>
+
+<p>
+</p><hr><h3>Of captures and values</h3>
+<p>
+Before delving into groups proper, we must first explore a subtlety in the way captures handle their subcaptures.
+</p><p>
+Some captures operate on the values produced by their subcaptures, while others operate on the capture objects. This is sometimes counter-intuitive.
+</p><p>
+Let's take the following pattern:
+</p><pre class="code">    (1 * C( C<span class="string">"b"</span> * C<span class="string">"c"</span> ) * 1):match<span class="string">"abcd"</span>
+    <span class="comment">--&gt; "bc", "b", "c"</span>
+    </pre>
+
+As you can see, it inserts three values in the capture stream.
+<p>
+Let's wrap it in a table capture:
+</p><pre class="code">    Ct(1 * C( C<span class="string">"b"</span> * C<span class="string">"c"</span> ) * 1):match<span class="string">"abcd"</span>
+    <span class="comment">--&gt; { "bc", "b", "c" }</span>
+    </pre>
+
+<code>Ct()</code> operates on values. In the last example, the three values that are inserted in order in the table.
+<p>
+Now, let's try a substitution capture:
+</p><pre class="code">    Cs(1 * C( C<span class="string">"b"</span> * C<span class="string">"c"</span> ) * 1):match<span class="string">"abcd"</span>
+    <span class="comment">--&gt; "abcd"</span>
+    </pre>
+
+<code>Cs()</code> operates on captures. It scans the first level of its nested captures, and only takes the first value of each one. In the above example, <code>"b"</code> and <code>"c"</code> are thus discarded. Here's another example that may make things more clear:
+<pre class="code">    <span class="keyword">function</span> the_func (bcd) 
+        <span class="library">assert</span>(bcd == <span class="string">"bcd"</span>)
+        <span class="keyword">return</span> <span class="string">"B"</span>, <span class="string">"C"</span>, <span class="string">"D"</span> 
+    <span class="keyword">end</span>
+
+    Ct(1 * ( C<span class="string">"bcd"</span> / the_func ) * 1):match<span class="string">"abcde"</span>
+    <span class="comment">--&gt; {"B", "C", "D"}  -- All values are inserted.</span>
+
+    Cs(1 * ( C<span class="string">"bcd"</span> / the_func ) * 1):match<span class="string">"abcde"</span>
+    <span class="comment">--&gt; "aBe"   -- the "C" and "D" have been discarded.</span>
+    </pre>
+
+A more detailed account of the by value / by capture behaviour of each kind of capture will be the topic of another section.
+<p>
+</p><hr><h3>Capture opacity</h3>
+<p>
+Another important thing to realise is that most captures shadow their subcaptures, but some don't. As you can see in the last example, the value of <code>C"bcd"</code> is passed to the <code>/function</code> capture, but it doesn't end in the final capture list. <code>Ct()</code> and <code>Cs()</code> are also opaque in this regard. They only produce, resectively, one table or one string.
+</p><p>
+On the other hand, <code>C()</code> is transparent. As we've seen above, the subcaptures of <code>C()</code> are also inserted in the stream.
+</p><pre class="code">    C(C<span class="string">"b"</span> * C<span class="string">"c"</span>):match<span class="string">"bc"</span> <span class="comment">--&gt; "bc", "b", "c"</span>
+    </pre>
+
+The only transparent captures are <code>C()</code> and the anonymous <code>Cg()</code>. 
+<p>
+</p><hr><h3>Anonymous groups</h3>
+<p>
+<code>Cg()</code> wraps its subcaptures in a single capture object, but doesn't produce anything of its own. Depending on the context, either all of its values will be inserted, or only the first one.
+</p><p>
+Here are a few examples for the anonymous groups:
+</p><pre class="code">    (1 * Cg(C<span class="string">"b"</span> * C<span class="string">"c"</span> * C<span class="string">"d"</span>) * 1):match<span class="string">"abcde"</span>
+    <span class="comment">--&gt; "b", "c", "d"</span>
+
+    Ct(1 * Cg(C<span class="string">"b"</span> * C<span class="string">"c"</span> * C<span class="string">"d"</span>) * 1):match<span class="string">"abcde"</span>
+    <span class="comment">--&gt; { "b", "c", "d" }</span>
+
+    Cs(1 * Cg(C<span class="string">"b"</span> * C<span class="string">"c"</span> * C<span class="string">"d"</span>) * 1):match<span class="string">"abcde"</span>
+    <span class="comment">--&gt; "abe" -- "c" and "d" are dropped.</span>
+    </pre>
+
+<p>
+Where this behavior is useful? In folding captures. 
+</p><p>
+Let's write a very basic calculator, that adds or substracts one digit numbers.
+</p><pre class="code">    <span class="keyword">function</span> calc(a, op, b)
+        a, b = <span class="library">tonumber</span>(a), <span class="library">tonumber</span>(b)
+        <span class="keyword">if</span> op == <span class="string">"+"</span> <span class="keyword">then</span> 
+            <span class="keyword">return</span> a + b
+        <span class="keyword">else</span>
+            <span class="keyword">return</span> a - b
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+
+    digit = R<span class="string">"09"</span>
+
+    calculate = Cf(
+        C(digit) * Cg( C(S<span class="string">"+-"</span>) * C(digit) )^0
+        , calc
+    )
+    calculate:match<span class="string">"1+2-3+4"</span>
+    <span class="comment">--&gt; 4</span>
+
+    </pre>
+
+The capture tree will look like this [*]:
+<pre class="code">    {<span class="string">"Cf"</span>, func = calc, children = {
+        {<span class="string">"C"</span>, val = <span class="string">"1"</span>},
+        {<span class="string">"Cg"</span>, children = {
+            {<span class="string">"C"</span>, val = <span class="string">"+"</span>},
+            {<span class="string">"C"</span>, val = <span class="string">"2"</span>}
+        } },
+        {<span class="string">"Cg"</span>, children = {
+            {<span class="string">"C"</span>, val = <span class="string">"-"</span>},
+            {<span class="string">"C"</span>, val = <span class="string">"3"</span>}
+        } },
+        {<span class="string">"Cg"</span>, children = {
+            {<span class="string">"C"</span>, val = <span class="string">"+"</span>},
+            {<span class="string">"C"</span>, val = <span class="string">"4"</span>}
+        } }
+    } }
+    </pre>
+  
+You probably see where this is going... Like <code>Cs()</code>, <code>Cf()</code> operates on capture objects. It will first extract the first value of the first capture, and use it as the initial value. If there are no more captures, this value becomes the value of the <code>Cf()</code>.
+<p>
+But we have more captures. In our case, it will pass all the values of the second capture (the group) to <code>calc()</code>, tacked after the value of the first one. Here's the evaluation of the above <code>Cf()</code>
+</p><pre class="code">    first_arg = <span class="string">"1"</span>
+    next_ones: <span class="string">"+"</span>, <span class="string">"2"</span>
+    first_arg = calc(<span class="string">"1"</span>, <span class="string">"+"</span>, <span class="string">"2"</span>) <span class="comment">-- 3, calc() returns numbers</span>
+
+    next_ones: <span class="string">"-"</span>, <span class="string">"3"</span>
+    first_arg = calc(3, <span class="string">"-"</span>, <span class="string">"3"</span>)
+
+    next_ones: <span class="string">"+"</span>, <span class="string">"4"</span>
+    first_arg = calc(0, <span class="string">"+"</span>, <span class="string">"4"</span>)
+
+    <span class="keyword">return</span> first_arg <span class="comment">-- Tadaaaa.</span>
+    </pre>
+
+<p>
+[*] Actually, at match time, the capture objects only store their bounds and auxiliary data (like <code>calc()</code> for the <code>Cf()</code>). The actual values are produced sequencially after the match has completed, but, it makes things more clear as displayed above. In the above example, the values of the nested <code>C()</code> and <code>Cg(C(),C())</code> are actually produced one at a time, at each corresponding cycle of the folding process.
+</p><p>
+</p><p>
+</p><hr><h3>Named groups</h3>
+<p>
+The ( named <code>Cg()</code> / <code>Cb()</code> ) pair has a behavior similar to the anonymous <code>Cg()</code>, but the values captured in the named <code>Cg()</code> are not inserted locally. They are teleported, and end up inserted in the stream at the place of the <code>Cb()</code>.
+</p><p>
+</p><p>
+Here's an example:
+</p><pre class="code">    ( 1 * Cg(C<span class="string">"bc"</span>, <span class="string">"FOOO"</span>) * C<span class="string">"d"</span> * 1 * Cb<span class="string">"FOOO"</span> * Cb<span class="string">"FOOO"</span>):match<span class="string">"abcde"</span>
+    <span class="comment">-- &gt; "d", "bc", "bc"    </span>
+    </pre>
+
+Warp... and duplication if there is more than one <code>Cb()</code>. Another example:
+<pre class="code">    ( 1 * Cg(C<span class="string">"b"</span> * C<span class="string">"c"</span> * C<span class="string">"d"</span>, <span class="string">"FOOO"</span>) * C<span class="string">"e"</span> * Ct(Cb<span class="string">"FOOO"</span>) ):match<span class="string">"abcde"</span>
+    <span class="comment">--&gt; "e", { "b", "c", "d" }</span>
+    </pre>
+
+<p>
+Usually, for the sake of clarty, in my code, I alias <code>Cg()</code> to <code>Tag()</code>. I use the former for anonymous groups, and the latter for named groups.
+</p><p>
+</p><p>
+</p><p>
+<code>Cb"FOOO"</code> will look back for a corresponding <code>Cg()</code> that has succeeded. It goes back and up in the tree, and consumes captures. In other words, it searches its elder siblings, and the elder siblings of its parents, but not the parents themselves. Neither does it test the children of the siblings/siblings of ancestors.
+</p><p>
+It proceeds as follows (start from the <code>[ #### ] &lt;--- [[ START ]]</code> and follow the numbers back up).
+</p><p>
+The <code>[ numbered ]</code> captures are the captures that are tested on order. The ones marked with 
+<code>[ ** ]</code> are not, for the various reasons listed. This is hairy, but AFAICT complete.
+</p><p>
+</p><p>
+</p><pre class="code">    Cg(<span class="comment">-- [ ** ] ... This one would have been seen, </span>
+       <span class="comment">-- if the search hadn't stopped at *the one*.</span>
+       <span class="string">"Too late, mate."</span>
+        , <span class="string">"~@~"</span>
+    )
+
+    * Cg( <span class="comment">-- [ 3 ] The search ends here. &lt;--------------[[ Stop ]]</span>
+        <span class="string">"This is *the one*!"</span>
+        , <span class="string">"~@~"</span>
+    )
+
+    * Cg(<span class="comment">--  [ ** ] ... The great grand parent. </span>
+                     <span class="comment">-- Cg with the right tag, but direct ancestor,</span>
+                     <span class="comment">-- thus not checked.</span>
+
+        
+        Cg( <span class="comment">-- [ 2 ] ... Cg, but not the right tag. Skipped.</span>
+            Cg( <span class="comment">-- [ ** ] good tag but masked by the parent (whatever its type)</span>
+                <span class="string">"Masked"</span>
+                , <span class="string">"~@~"</span>
+            )
+            , <span class="string">"BADTAG"</span>
+        )
+
+        * C( <span class="comment">-- [ ** ] ... grand parent. Not even checked.</span>
+
+            ( 
+                Cg( <span class="comment">-- [ ** ] ... This subpattern will fail after Cg() succeeds.</span>
+                    <span class="comment">-- The group is thus removed from the capture tree, and will</span>
+                    <span class="comment">-- not be found dureing the lookup.</span>
+                    <span class="string">"FAIL"</span>
+                    , <span class="string">"~@~"</span>
+                ) 
+                * <span class="keyword">false</span> 
+            )
+
+            + Cmt(  <span class="comment">-- [ ** ] ... Direct parent. Not assessed.</span>
+                C(1) <span class="comment">-- [ 1 ] ... Not a Cg. Skip.</span>
+
+                * Cb<span class="string">"~@~"</span>   <span class="comment">-- [ #### ]  &lt;----------------- [[ START HERE ]] --</span>
+                , <span class="keyword">function</span>(subject, index, cap1, cap2) 
+                    <span class="keyword">return</span> <span class="library">assert</span>(cap2 == <span class="string">"This is *the one*!"</span>)
+                <span class="keyword">end</span>
+            )
+        )
+        , <span class="string">"~@~"</span> <span class="comment">-- [ ** ] This label goes with the great grand parent.</span>
+    )
+    </pre>
+
+<hr>-- <a href="http://lua-users.org/wiki/PierreYvesGerardy">PierreYvesGerardy</a>
+<hr>
+<a href="http://lua-users.org/wiki/RecentChanges">RecentChanges</a> · <a href="http://lua-users.org/cgi-bin/wiki.pl?action=editprefs">preferences</a><br>
+<a href="http://lua-users.org/cgi-bin/wiki.pl?action=edit&id=LpegTutorial">edit</a> · <a href="http://lua-users.org/cgi-bin/wiki.pl?action=history&id=LpegTutorial">history</a><br>Last edited May 24, 2015 11:11 am GMT <a href="http://lua-users.org/cgi-bin/wiki.pl?action=browse&diff=1&id=LpegTutorial">(diff)</a>
+
+</body></html>

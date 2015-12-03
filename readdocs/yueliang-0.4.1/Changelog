@@ -1,0 +1,680 @@
+yueliang changelog
+------------------
+
+2008-05-31  Kein-Hong Man  <khman@users.sf.net>
+
+	* nat-5.0.3/README: updated notes
+	* nat-5.1.3/README: updated notes
+	* Manifest: updated
+	* README: updated
+	* Version: 0.4.1
+
+2008-05-31  Kein-Hong Man  <khman@users.sf.net>
+
+	* test/test_lparser_mk3_2.lua: added better parser tester that
+	covers whole grammar, all tests passes
+	* test/test_lparser_mk3_2.lua: added better parser tester that
+	covers whole grammar, all tests passes
+	* nat-5.0.3/test/bench_llex_mk2.lua, nat-5.0.3/test/bench_llex_mk3.lua,
+	nat-5.0.3/test/bench_llex_mk4.lua, nat-5.0.3/test/test_lzio_mk2.lua,
+	nat-5.0.3/test/test_lparser_mk3.lua, nat-5.0.3/test/test_lparser_mk3b.lua,
+	nat-5.0.3/test/test_llex_mk2.lua, nat-5.0.3/test/test_llex_mk3.lua,
+	nat-5.0.3/test/test_llex_mk4.lua:
+	adjusted require() call to loose .lua extension, better?
+	* nat-5.0.3/README: updated info
+	* orig-5.0.3/test/test_ldump.lua, orig-5.0.3/test/test_llex.lua,
+	orig-5.0.3/test/bench_llex.lua, orig-5.0.3/test/test_lparser.lua,
+	orig-5.0.3/test/test_number.lua, orig-5.0.3/test/test_lparser2.lua,
+	orig-5.0.3/test/test_lzio.lua, test_lua/test_scripts-5.0.lua:
+	adjusted require() call to loose .lua extension, better?
+	* orig-5.0.3/test/test_llex.lua: fixed minor change in test case
+	output, probably something changed between 5.0.2 and 5.0.3
+	* nat-5.1.3/test/test_lparser_mk2_2.lua: added better parser tester
+	that covers whole grammar, all tests passes
+
+2008-05-29  Kein-Hong Man  <khman@users.sf.net>
+
+	* nat-5.1.3/lparser_mk2.lua: bug, binopr_* missing '%' operator
+
+2008-05-28  Kein-Hong Man  <khman@users.sf.net>
+
+	* nat-5.1.3/lparser_mk2.lua: bug, unopr[] missing '#' operator
+
+2008-05-23  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.0.3/test/test_llex.lua: removed duplicate test entry
+	* orig-5.1.3/test/test_llex.lua: removed duplicate test entry
+	* nat-5.0.3/test/test_llex_mk2.lua: removed duplicate test entry
+	* nat-5.0.3/test/test_llex_mk3.lua: removed duplicate test entry
+	* nat-5.0.3/test/test_llex_mk4.lua: removed duplicate test entry
+	* nat-5.1.3/test/test_llex_mk2.lua: removed duplicate test entry
+
+2008-05-22  Kein-Hong Man  <khman@users.sf.net>
+
+	* nat-5.1.3/lparser_mk2.lua: finish debugging, all test sample
+	appear to work
+	* nat-5.1.3/test/test_lparser_mk2.lua: added test script, works
+	* nat-5.1.3/test/parser_log/sample_*.lua: added parser output
+	log message samples
+	* nat-5.1.3/README: updated notes
+	* Manifest: updated
+	* README: updated
+	* OlderNews: updated
+	* Version: 0.4.0
+
+2008-05-22  Kein-Hong Man  <khman@users.sf.net>
+
+	* nat-5.1.3/lparser_mk2.lua (init): mistake in naming llex.llex
+	* nat-5.1.3/lparser_mk2.lua (str_checkname): forgot to remove
+	original C parameter 'ls' in call to check()
+	* nat-5.1.3/lparser_mk2.lua (constructor): missed name change
+	from luaX to llex
+	* nat-5.1.3/lparser_mk2.lua: added a local _G for *_stat lookups
+	* nat-5.1.3/lparser_mk2.lua (test_then_block): v parm not needed
+	* nat-5.1.3/lparser_mk2.lua (cond): v parm not needed, added
+	a local v creation before calling expr() in body, removed not
+	needed v creation in functions that call cond()
+	* nat-5.1.3/lparser_mk2.lua (simpleexp): check_condition() for
+	fs.is_vararg, wrong sense
+	* nat-5.1.3/lparser_mk2.lua: reset top_fs each time initialized;
+	added forward references for local functions
+
+2008-05-20  Kein-Hong Man  <khman@users.sf.net>
+
+	* nat-5.1.3/lparser_mk2.lua: new file, bits and pieces for
+	native 5.1.x parser, ongoing
+	* nat-5.1.3/lparser_mk2.lua: completed initial coding,
+	untested
+
+2008-05-20  Kein-Hong Man  <khman@users.sf.net>
+
+	* nat-5.0.3/README: updated with caveats about line ending
+	normalization in strings and long strings
+	* nat-5.1.3/README: updated notes
+	* README: updated
+	* Version: 0.3.2
+
+2008-05-20  Kein-Hong Man  <khman@users.sf.net>
+
+	* nat-5.1.3/test/test_llex_mk2.lua: native 5.1.x lexer tester
+	* nat-5.1.3/test/test_llex_mk2.lua: deleted deprecated tests
+	* nat-5.1.3/llex_mk2.lua: adjusted require call
+	* nat-5.1.3/llex_mk2.lua: made sourceid handling more robust
+	* nat-5.1.3/llex_mk2.lua (llex): mistake in porting code from
+	5.0.x native lexer -- variable kept as q when it was renamed p
+	* nat-5.1.3/llex_mk2.lua (read_long_string): missing reassign
+	main value I of lexing position for ']' negative test
+	* nat-5.1.3/llex_mk2.lua (read_long_string): missing add string
+	segment to buffer for ']' negative test
+	* nat-5.1.3/llex_mk2.lua (read_string): fixed \xxx sequence
+	conversion from number to string, forgot how old code worked
+	* nat-5.1.3/llex_mk2.lua: works
+	* nat-5.1.3/test/test_llex_mk2.lua: all tests run
+	* nat-5.1.3/README: updated
+
+2008-05-19  Kein-Hong Man  <khman@users.sf.net>
+
+	* nat-5.1.3/: created for 5.1.x lexer/parser work
+	* nat-5.1.3/test: created for test scripts
+	* nat-5.1.3/llex_mk2.lua: preliminary native lexer for Lua 5.1.x
+	complete (except for next() and lookahead()), untested
+	* nat-5.1.3/README: added
+
+2008-05-19  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.0.3/lparser.lua: added comments for calls
+	* nat-5.0.3/lparser_mk3b.lua: new native parser, same as
+	lparser_mk3.lua except with variable management code added
+	* nat-5.0.3/test/test_lparser_mk3b.lua: new test script,
+	started testing variable management code
+	* nat-5.0.3/lparser_mk3b.lua (luaY:new_localvar, luaY:searchvar):
+	fixed var lookup bug due to fs.bl=nil at function top level
+	* nat-5.0.3/lparser_mk3b.lua (luaY:singlevaraux): fixed bug due
+	to wrong name used, 'v' instead of the correct 'var'
+	* nat-5.0.3/lparser_mk3b.lua: fixed extra 'ls' parms that ought
+	to be removed, when adding code to manage variables; copied from
+	lparser.lua without thinking
+	* nat-5.0.3/test/parser_log/sample_b_*.lua: added log samples
+	* nat-5.0.3/README: updated
+	* Manifest: updated for parser log samples
+	* README: updated
+	* OlderNews: updated
+	* Version: 0.3.1
+
+2008-04-13  Kein-Hong Man  <khman@users.sf.net>
+
+	* nat-5.0.3/test/parser_log/: new subdirectory for log samples
+	* nat-5.0.3/test/parser_log/sample_*.lua: added log samples
+	* nat-5.0.3/README: updated
+	* Manifest: updated for parser log samples
+	* test_lua/files-yueliang-5.1.txt: updated directory name change
+	* README: updated
+	* Version: 0.3.0
+
+2008-04-13  Kein-Hong Man  <khman@users.sf.net>
+
+	* nat-5.0.3/test/test_lparser_mk3.lua: if_stat tests,
+	return_stat tests, while_stat tests, repeat_stat tests
+	* nat-5.0.3/lparser_mk3.lua: logging for if_stat,
+	return_stat, while_stat, repeat_stat, and comment tweaks
+	* nat-5.0.3/test/test_lparser_mk3.lua: tests for break_stat,
+	for_stat, local_stat, function_stat, anonymous functions,
+	table constructors
+	* nat-5.0.3/lparser_mk3.lua: logging written for break_stat,
+	for_stat, local_stat, function_stat, anonymous functions,
+	table constructors
+	* nat-5.0.3/lparser_mk3.lua (luaY:localfunc): missing struct b
+	* nat-5.0.3/lparser_mk3.lua: everything seems to work
+
+2008-04-12  Kein-Hong Man  <khman@users.sf.net>
+
+	* nat-5.0.3/test/test_lparser_mk3.lua: basic expr tests
+	* nat-5.0.3/lparser_mk3.lua: logging for expressions mostly
+	done, fixed bugs in luaY:subexpr caused by simplification of
+	orig-5.0.3 sources, seems okay now
+	* nat-5.0.3/README: updated
+	* Manifest: updated
+	* README: updated
+	* Version: 0.2.4
+
+2008-04-12  Kein-Hong Man  <khman@users.sf.net>
+
+	* nat-5.0.3/test/test_lparser_mk3.lua: added log message
+	dumper function, added test script exerciser
+	* nat-5.0.3/lparser_mk3.lua (luaY:open_func): tweaked to
+	allow early logging
+	* nat-5.0.3/lparser_mk3.lua: added some logging messages
+	* nat-5.0.3/test/test_lparser_mk3.lua: added output indenter
+	* nat-5.0.3/lparser_mk3.lua (luaY:syntaxerror): bug, ref
+	to self.tok when it should be tok
+	* nat-5.0.3/lparser_mk3.lua: more logging messages, tests
+
+2008-04-12  Kein-Hong Man  <khman@users.sf.net>
+
+	* nat-5.0.3/lparser_mk3.lua: removed old attempt at
+	writing a native parser skeleton
+	* nat-5.0.3/lparser_mk3.lua: added preliminary new
+	native 5.0.3 parser skeleton
+	* nat-5.0.3/test/test_lparser_mk3.lua: renamed from
+	test_lparser.lua to match mk numbering
+	* nat-5.0.3/lparser_mk3.lua (luaY:next): missing 'end'
+	* nat-5.0.3/test/test_lparser_mk3.lua: runs, no die
+
+2008-04-10  Kein-Hong Man  <khman@users.sf.net>
+
+	* nat-5.0.3/test/test_lparser.lua: new, preliminary native
+	parser test code
+	* nat-5.0.3/lparser_mk3.lua: fixed regex for binary
+	operator priority string
+	* nat-5.0.3/lparser_mk3.lua: renamed variable clash
+	with function peek -> peek_tok, added missing init
+	* nat-5.0.3/lparser_mk3.lua: function name clash,
+	one changed to localstat -> localdeclstat
+	* nat-5.0.3/test/test_lparser.lua: passed simple string
+	* nat-5.0.3/test/sample.lua: added test file
+	* nat-5.0.3/test/test_lparser.lua: added longer test, fail
+	* nat-5.0.3/lparser_mk3.lua (luaY:subexpr): inconsistent
+	call parameters, might prefer to rewrite whole thing
+
+2008-04-09  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.1.2/lcode.lua (luaK:prefix): 5.1.3 fix
+	* orig-5.1.2/lparser.lua (luaY:assignment): 5.1.3 fix
+	* orig-5.1.3: renamed from orig-5.1.2, updated names
+	* orig-5.1.3/README: updated
+	* COPYRIGHT, COPYRIGHT_Lua51: updated year
+	* README: updated
+	* Version: 0.2.3
+
+2007-11-21  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.1.1/lparser.lua (luaY:listfield): 5.1.2 fixes
+	* orig-5.1.1/lcode.lua (luaK:infix, luaK:codearith,
+	luaK:_nil): 5.1.2 fixes
+	* orig-5.1.2: renamed from orig-5.1.1, updated names
+	* COPYRIGHT, COPYRIGHT_Lua51: updated
+	* README: updated
+	* test_lua/files-*, README: directory name adjustment
+	* test_lua/5.0, 5.1: renamed from 5.0.3, 5.1.1
+	* test_lua: renamed files, adjusted directory references
+	* Version: 0.2.2
+
+2006-11-28  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.0.3/test/test_lparser2.lua: added option to dump
+	all error messages for failure cases, to check whether test
+	cases trip the parser where intended
+	* orig-5.1.1/test/test_lparser2.lua: ditto
+
+2006-11-27  Kein-Hong Man  <khman@users.sf.net>
+
+	* test_lua/README: updated
+	* orig-5.0.3/README: updated
+	* orig-5.1.1/README: updated
+	* Manifest: updated
+	* README: updated
+	* COPYRIGHT: updated version number
+	* Version: 0.2.1
+
+2006-11-27  Kein-Hong Man  <khman@users.sf.net>
+
+	* test_lua/test_parser-5.1.lua: parser test case file
+	for Lua 5.1.x
+	* orig-5.1.1/test/test_lparser2.lua: added a parser tester
+	for the 5.1.1 front end, fixed one bug, 524 tests passed
+	* orig-5.1.1/lparser.lua (luaY:simpleexp): fixed test
+	on fs.f.is_vararg, numerical not boolean
+
+2006-11-27  Kein-Hong Man  <khman@users.sf.net>
+
+	* nat-5.0.3/lparser_mk3.lua: updated expression type
+	information passing, needed to detect VCALLs
+	* test_lua/test_parser-5.0.lua: preliminary parser test
+	case file for Lua 5.0.x
+	* test_lua/test_parser-5.0.lua: fixed use of [==[!
+	* test_lua/test_parser-5.0.lua: updated test cases after
+	verifying with native Lua
+	* orig-5.0.3/test/test_lparser2.lua: added a parser tester
+	for the 5.0.3 front end, 503 tests passed
+	* nat-5.0.3/README: updated with info on lparser_mk3.lua
+
+2006-11-23  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.0.3/lparser.lua: fixed comment typo
+	* orig-5.1.1/lparser.lua: fixed comment typo
+	* nat-5.0.3/lparser_mk3.lua: preliminary parser skeleton
+
+2006-11-22  Kein-Hong Man  <khman@users.sf.net>
+
+	* test_lua/README: updated with test status
+	* test_lua/files-yueliang-5.0.3.txt: updated filenames
+	* test_lua/files-yueliang-5.1.1.txt: added for 5.1.1
+	* test_lua/files-lua-5.1.1.txt: added for 5.1.1
+	* test_lua/files-other-5.1.1.txt: added for 5.1.1
+	* test_lua/test_scripts: to accomodate 5.1.1 material,
+	renamed to test_lua/test_scripts-5.0.3.lua
+	* test_lua/test_scripts-5.1.1.lua: added, after debugging,
+	all files compiled successfully
+	* Manifest: updated
+	* README: updated
+	* Version: 0.2.0
+
+2006-11-22  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.1.1/lparser.lua (luaY:parlist): missing 'self',
+	(luaY:test_then_block): missing 'self',
+	(luaY:yindex) check should be checknext,
+	(luaY:adjustlocalvars) nvars should be loop index i
+	* orig-5.1.1/lcode.lua (luaK:addk): redo fs.h[] code,
+	(luaK:nilK) forgot to change from old name nil_constant
+	(luaK:posfix) copyexp() added to copy expdesc structs
+	(luaK:patchlistaux) incorrectly placed loop iterator
+	* orig-5.1.1/lparser.lua:
+	(luaY:breakstat) luaK:concat returns a value!
+	(luaY:new_localvarliteral) forgot to correct parameter
+	(luaY:ifstat) luaK:concat returns a value!
+	(luaY:whilestat) typo, "whileint"
+	(luaY:simpleexp) missing 'self' for VARARG_NEEDSARG
+	(luaY:repeatstat) type, "zself"
+	(luaY:repeatstat) failed to clear away old code
+	* orig-5.1.1/lcode.lua: (luaK:constfolding): missing 'self'
+	(luaK:isnumeral) incorrect type of NO_JUMP
+	(luaK:need_value) missing interator converting for loop
+	* orig-5.1.1/llex.lua (luaX:next): must be copy-by-value
+	(luaK:patchtestreg) cannot replace an inst table
+	* orig-5.1.1/ldump.lua (luaU:DumpConstants): typo for
+	constant name, LUA_BOOLEAN -> LUA_TBOOLEAN
+
+2006-11-22  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.1.1/test/bench_llex.lua: added performance
+	tester for Lua 5.1.1 lexer
+	* orig-5.1.1/README: added preliminary performance data
+	* orig-5.1.1/lparser.lua: debugging,
+	(luaY:checklimit) missing 'end'
+	(luaY:repeatstat) extra 'end'
+	(luaY:parser) added nCcalls initialization for LuaState
+	(luaY:exprstat) should be luaK:getcode
+	* orig-5.1.1/llex.lua: debugging, luaX:lex renamed to
+	luaX:llex to follow Lua 5.1.1
+	* orig-5.1.1/test/test_llex.lua: luaX:lex -> luaX:llex
+	* orig-5.1.1/test/bench_llex.lua: luaX:lex -> luaX:llex
+	* orig-5.1.1/lcode.lua: debugging,
+	(luaK:addK) adjusted value storage, removed setnvalue call
+	(luaK:codeABC) luaP instead of self, 2 cases
+	* orig-5.1.1/lopcodes.lua: fixed string parameter type for
+	instruction information lookup functions,
+	(luaP:ISK) fixed MSB bit testing to denote constants
+	(luaP:Instruction) fixed instruction encoding into bytes
+
+2006-11-21  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.0.3/lcode.lua: noted failed assert, adjusted
+	names of set*value lobject.h macros
+	* README: noted two cases needing following up: a failed
+	assert (see above) and a missing luaG_checkcode()
+	* orig-5.1.1/lopcodes.lua: added luaP:CREATE_Inst(c) for
+	luaK:setlist, implementation of OP_SETLIST
+	* orig-5.1.1/lcode.lua: added preliminary ported file
+
+2006-11-21  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.1.1/lparser.lua: added preliminary ported file
+	* orig-5.1.1/lparser.lua: fixed syntax porting bugs (3):
+	(luaY:hasmultret): || changed to or in return statement
+	(luaY:indexupvalue): || changed to or in assert statement
+	(luaY:singlevaraux): missing return before return value
+
+2006-11-17  Kein-Hong Man  <khman@users.sf.net>
+
+	* Manifest: updated
+	* README: updated
+	* Version: 0.1.4
+
+2006-11-17  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.1.1/ldump.lua: removed string.len in 2 places
+	* orig-5.0.3/lopcodes.lua: (luaP:DecodeInst) comments
+	adjusted, a regexp changed elsewhere
+	* orig-5.1.1/ldump.lua: fixed porting bug (function name)
+	* orig-5.1.1/test/test_ldump.lua: tested binary dumper
+	* orig-5.1.1/test/test_llex.lua: tested lexer, developed
+	new test cases to cover changes in Lua 5.1.x
+	* orig-5.1.1/llex.lua: fixed bugs in lexer in order to
+	run test cases successfully
+	(luaX:token2str) variable c should be token
+	(luaX:lexerror) incorrect call to luaX:chunkid
+	(luaX:read_numeral) scanning bug, %w captures EOZ too
+	(luaX:read_long_string) LUA_COMPAT_LSTR is in self
+	(luaX:lex) incorrect variable used in keyword lookup
+	* orig-5.0.3/lopcodes.lua: changed a gfind to gmatch
+	* test_llex*.lua: some tweaks to printout statement
+
+2006-11-17  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.1.1/ldump.lua: added binary chunk dumper
+	* orig-5.1.1/README: added preliminary information
+	* orig-5.1.1/test/test_lzio.lua: tested chunk reader
+	* orig-5.1.1/test/test_number.lua: tested number conversion
+	* test_number.lua: added FLT_MIN, FLT_MAX test values for
+	completeness, in case conversion to float is needed
+
+2006-11-16  Kein-Hong Man  <khman@users.sf.net>
+
+	* test_lua/5.0.2: directory renamed to test_lua/5.0.3
+	* test_lua: front end test script and associated files
+	updated for 5.0.3
+	* orig-5.0.2: directory renamed to orig-5.0.3, some
+	references to 5.0.2 changed
+	* nat-5.0.2: directory renamed to nat-5.0.3, some
+	references to 5.0.2 changed
+	* orig-5.1: directory renamed to orig-5.1.1, some
+	references to 5.1 changed
+
+2006-11-16  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.0.2/lcode.lua: updating to Lua 5.0.3, this is the
+	only front end file in orig-5.0.2 that has changed;
+	(luaK:need_value): body changed
+	(luaK:removevalues): new function, used in luaK:codenot
+	(luaK:patchlistaux): definition and body changed
+	(luaK:dischargejpc): body changed (due to luaK:patchlistaux)
+	(luaK:patchlist): body changed (due to luaK:patchlistaux)
+	(luaK:exp2reg): body changed (due to luaK:patchlistaux)
+	(luaK:jumponcond): body changed
+	(luaK:codenot): body changed (added luaK:removevalues)
+
+2006-11-16  Kein-Hong Man  <khman@users.sf.net>
+
+	* test_lua: moved 5.0.2 sample scripts to its own directory
+	* test_lua/test_scripts.lua: adjusted file paths of sample
+	files used for parser testing
+	* test_lua/test_scripts.lua: changed file list specification
+	to load several separate files for better flexibility and
+	easier maintenance
+	* test_lua/files-lua-5.0.2.txt: added sample file list
+	* test_lua/files-other-5.0.2.txt: added sample file list
+	* test_lua/files-yueliang-5.0.2.txt: added sample file list
+	* test_lua/README: updated
+	* Manifest: updated
+
+2006-11-13  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.0.2/lcode.lua: added function comments
+
+2006-11-13  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.0.2/test/bench_llex.lua: simple lexer benchmark
+	* nat-5.0.2/test/bench_llex_mk2.lua: adapted for mk2 lexer
+	* nat-5.0.2/test/bench_llex_mk3.lua: adapted for mk3 lexer
+	* nat-5.0.2/test/bench_llex_mk4.lua: adapted for mk4 lexer
+	* nat-5.0.2/README: added lexer benchmark results
+
+2006-11-11  Kein-Hong Man  <khman@users.sf.net>
+
+	* Manifest: updated
+	* README: updated
+	* Version: 0.1.3
+
+2006-11-11  Kein-Hong Man  <khman@users.sf.net>
+
+	* nat-5.0.2/llex_mk3.lua: further size optimization work on
+	new lexer, down to 3286 bytes (stripped)
+	* nat-5.0.2/llex_mk3.lua: fixed bug in short comment handling
+	* nat-5.0.2/README: added information for native lexers
+	* nat-5.0.2/llex_mk4.lua: line-based native lexer, see size
+	performance data in README
+	* nat-5.0.2/lzio_mk4.lua: line-based stream reader function
+	* nat-5.0.2/test/test_llex_mk4.lua: adapted version of test
+	cases, all tests passed
+
+2006-11-10  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.0.2/lparser.lua: added comments for parser
+	functions, one or more visual tweaks, no code changes
+
+2006-11-09  Kein-Hong Man  <khman@users.sf.net>
+
+	* nat-5.0.2/llex_mk3.lua: new minimal size lexer, but takes
+	in all the source code at once, 3346 bytes (stripped)
+	* nat-5.0.2/test/test_llex_mk3.lua: adapted version of test
+	cases, all tests passed
+
+2006-11-08  Kein-Hong Man  <khman@users.sf.net>
+
+	* nat-5.0.2/lzio_mk2.lua: renamed from lzio.lua
+	* nat-5.0.2/test/test_lzio_mk2.lua: renamed from test_lzio.lua
+	* nat-5.0.2/llex_mk2.lua: renamed from llex.lua
+	* nat-5.0.2/test/test_llex_mk2.lua: renamed from test_llex.lua
+
+2006-03-27  Kein-Hong Man  <khman@users.sf.net>
+
+	* nat-5.0.2/llex.lua: optimizations to reduce file size,
+	size down to 4003 bytes (stripped) from 4155 bytes
+
+2006-03-27  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.1: lzio.lua: minor formatting change
+	* orig-5.0.2/test/test_llex.lua: fix filename spec
+	* nat-5.0.2/lzio.lua: new simplified 'native' version
+	* nat-5.0.2/test/test_lzio.lua: test for the above
+	* nat-5.0.2/llex.lua: new simplified 'native' version
+	* nat-5.0.2/test/test_llex.lua: test for the above
+
+2006-03-25  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.0.2/llex.lua: typo fix
+	* orig-5.1/llex.lua: Lua 5.1 lexer
+	* Manifest: updated
+
+2006-03-23  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.0.2/tools/call_graph.lua: added display of contents
+	of expdesc structures
+
+2006-03-23  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.1: new directory for 5.1 front-end
+	* orig-5.1/lzio.lua: Lua 5.1 input stream reader
+	* COPYRIGHT: updated with Lua 5.1 information
+	* COPYRIGHT_Lua51: added for Lua 5.1
+	* Manifest: updated
+	* orig-5.0.2/lzio.lua: updated comments
+	* orig-5.1/lzio.lua (luaZ:fill): fixed porting bug
+
+2005-05-04  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.0.2/tools/sample_expr.lua: a Lua-style expression
+	parsing interactive demonstrator
+	* orig-5.0.2/tools/sample_expr.lua: fixed parsing bugs,
+	(1) unop subexpr, (2) assign to op before testing for binop
+	* orig-5.0.2/lparser.lua: fixed some comments which have
+	incorrect description of Lua syntax
+
+2005-04-18  Kein-Hong Man  <khman@users.sf.net>
+
+	* Version: 0.1.2
+
+2005-04-17  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.0.2/lparser.lua: added descriptive comments for some
+	expression parsing functions
+	* orig-5.0.2/test/test_number.lua: test cases for number
+	conversion functions in ldump.lua
+	* test_lua/test_scripts.lua: updated with some new test entries
+	* orig-5.0.2/ldump.lua (luaU:from_double): added support for
+	+/- infinity
+
+2005-04-14  Kein-Hong Man  <khman@users.sf.net>
+
+	* moved project to a Subversion repository
+
+2005-03-24  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.0.2/lopcodes.lua: added luaP:DecodeInst to decode
+	instruction from a 4-char string
+	* orig-5.0.2/lopcodes.lua (getOpMode, testOpMode): add 'self.'
+
+2005-03-22  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.0.2/tools/call_graph.lua: added comments, check for
+	namespace collision when selecting new name for orig function
+	* test_lua/test_scripts.lua: added comments, some test files
+
+2005-03-21  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.0.2/tools/call_graph.lua: added allow/deny of specific
+	functions, display of return values
+	* orig-5.0.2/tools/calls.log: sample output
+	* Version: 0.1.1
+
+2005-03-20  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.0.2/tools/call_graph.lua: added script to generate
+	a call graph from selected modules
+
+2005-03-19  Kein-Hong Man  <khman@users.sf.net>
+
+	* README: added some size statistics for comparison
+	* test_lua/README: updated description
+	* orig-5.0.2/README: added notes
+	* orig-5.0.2/lzio.lua: fixed bug when calling zgetc after
+	EOF for a file chunk reader (Thanks to Adam429)
+	* orig-5.0.2/test/test_lzio.lua: added manual test for above
+
+2005-03-17  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.0.2/lparser.lua (indexupvalue): struct expdesc copy
+	* orig-5.0.2/luac.lua: simple luac; can compile luac.lua
+	* orig-5.0.2/lparser.lua (assignment, constructor): missing
+	'self:'
+	* test_lua: added sample Lua scripts from Lua 5.0.2
+	* test_lua/README: add source attribution for example scripts
+	* orig-5.0.2/lcode.lua (arith_opc): typo OP_MULT -> OP_MUL
+	* orig-5.0.2/ldump.lua (DumpString): fixed handling for ""
+	* orig-5.0.2/ldump.lua (DumpFunction): fixed f.source handling
+	* orig-5.0.2/lcode.lua (jump, codebinop): 'luaK:' -> 'self:'
+	* orig-5.0.2/lcode.lua (need_value, exp2reg): comparison of
+	boolean cond with 0/1 C field, changed back to all 0/1
+	* orig-5.0.2/lzio.lua (init): test for nil reader argument
+	* test_lua/test_scripts.lua: Lua 5.0.2 examples all compiles
+	correctly, as does Yueliang files
+	* orig-5.0.2/lzio.lua (make_getF): changed file mode to "r"
+	so that chunk reader behaves like luac for \r\n-style files
+	* test_lua/test_scripts.lua: added Lua code from LuaSrcDiet,
+	SciTELuaExporters, ChunkBake, ChunkSpy, all works
+	* README: preliminary documentation
+	* some pre-release cosmetic changes
+	* initial public release
+	* Version: 0.1.0
+
+2005-03-16  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.0.2/test/test_lparser.lua: basic parser/codegen test
+	* orig-5.0.2/lparser.lua: added FuncState.actvar = {} init
+	* orig-5.0.2/lcode.lua (ttisnumber): handle nil entries
+	* orig-5.0.2/lopcodes.lua (getOpMode): string opcode parm
+	* orig-5.0.2/lcode.lua (exp2reg): missing 'self:' prefixes
+	* orig-5.0.2/lopcodes.lua (CREATE_ABC, CREATE_ABx): convert
+	string opcode representation to number when storing in field OP
+	* orig-5.0.2/lcode.lua (setsvalue, setnvalue, sethvalue):
+	missing second argument cause addk to fail
+	* orig-5.0.2/lparser.lua (check_match): missing 'self:'
+	* orig-5.0.2/test/test_lparser.lua: two simple tests successful
+	* orig-5.0.2/lcode.lua (exp2val, exp2anyreg, invertjump):
+	missing 'self:'
+	* orig-5.0.2/lparser.lua (parlist, subexpr): missing 'self:'
+	* orig-5.0.2/lopcodes.lua (testOpMode): string opcode parm
+	* orig-5.0.2/lparser.lua (subexpr): convert string operator name
+	to BinOpr number when looking up binop operator priority
+	* orig-5.0.2/lparser.lua (adjustlocalvars): wrong loop index
+	* orig-5.0.2/lcode.lua (addk): fixed constant lookup
+
+2005-03-15  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.0.2/lcode.lua: completed porting (untested)
+	* orig-5.0.2/ldump.lua: completed porting (untested)
+	* orig-5.0.2/test/test_ldump.lua: added chunk writer tests
+	* orig-5.0.2/test/test_ldump.lua: basic test writing binary
+	chunk from a simple function prototype table successful
+
+2005-03-14  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.0.2/lparser.lua: updated representation of constants
+	* orig-5.0.2/lopcodes.lua: completed porting (untested)
+	* orig-5.0.2/test_lzio.lua: moved to orig-5.0.2/test subdir
+	* orig-5.0.2/test_llex.lua: moved to orig-5.0.2/test subdir
+
+2005-03-13  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.0.2/lparser.lua: completed porting (untested),
+	can't be tested without lcode/ldump
+
+2005-03-11  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.0.2/test_llex.lua: added manual test for llex.lua
+	* orig-5.0.2/llex.lua: code review; put Token parameter to
+	replace seminfo pointer in luaX:lex and related functions
+	* orig-5.0.2/llex.lua (chunkid): fixed buffer handling bug
+	* orig-5.0.2/llex.lua (read_string): escaped \n index bug
+	* orig-5.0.2/test_llex.lua: adjusted calling code to properly
+	use Token struct t in LS same as in original lparser.c calls
+	* orig-5.0.2/llex.lua (token2str): put back an assert as comment
+	* orig-5.0.2/llex.lua (readname): bug reading name up to EOZ
+	* orig-5.0.2/llex.lua (read_string): forgot c = self:next(LS)
+	* orig-5.0.2/llex.lua (readname): %w (alnum) instead of %a
+	* orig-5.0.2/llex.lua (lex): string.byte(c) for ctrl char msg
+	* orig-5.0.2/test_llex.lua: added automatic testing, all test
+	cases work after bug fixes (see above entries) to llex.lua
+	* orig-5.0.2/llex.lua: complete
+
+2005-03-10  Kein-Hong Man  <khman@users.sf.net>
+
+	* orig-5.0.2/llex.lua: completed porting
+
+2005-03-09  Kein-Hong Man  <khman@users.sf.net>
+
+	* started work on porting files (llex|lparser|lcode).(h|c)
+	* orig-5.0.2/lzio.lua: done parts needed for llex.lua, manually
+	tested with both string and file chunk readers
+	* orig-5.0.2/test_lzio.lua: created manual test

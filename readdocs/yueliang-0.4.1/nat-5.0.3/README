@@ -1,0 +1,122 @@
+nat-5.0.3
+
+This directory contains versions of front end files that are rewritten
+to be more "native" to Lua. These files should be considered as
+exercises in exploring ways to write the front end, for example, to
+write a front end that is optimized for size, etc. See also file size
+data further below.
+
+The following are the different versions available (mk2 == "mark 2",
+this is commonly used in the UK, e.g. for aeroplanes during WWII):
+
+Lexers
+------
+
+WARNING: Theses lexer may or may not exhibit exact behaviour when lexing
+strings or long strings with embedded CRLF newlines. The CRLF sequence
+may be translated into LF (the reference manual is unclear on this.) The
+user is advised to stick to LF line endings exclusively.
+
+llex_mk2	Rewritten from original ported code to become more
+		Lua-like. Still uses a stream-based input interface.
+		MK2 still scans using a per-character function that
+		is pretty inefficient.
+
+		Status: TESTED
+
+llex_mk3	A rewritten version of MK2 that needs input to be
+		entered as a single string. Unless an application's
+		need is very unusual, this should not be a problem.
+		It will not work for per-line interaction, though.
+		MK3 no longer needs stream input functions. This
+		version is also heavily optimized for size. MK3 scans
+		using find functions and doesn't create many strings.
+
+		Status: TESTED
+
+llex_mk4	A rewritten version of MK3 that is line-oriented.
+		This allows a command-line version that works in the
+		usual way to be written.
+
+		Status: TESTED
+
+The following is a comparison of file sizes (as of 20061111):
+
+		 lzio	 llex	 TOTAL	Speed (2)
+		(bytes) (bytes) (bytes) (KB/s)
+----------------------------------------------
+Binary (Mingw)	  416	 5312	 5728     N/A
+----------------------------------------------
+(in orig-5.0.3:)
+----------------------------------------------
+normal		 2219	12639	14585	 404.9
+stripped	 1292	 7618	 8910
+----------------------------------------------
+(in nat-5.0.3:)
+----------------------------------------------
+mk2		 1995	 7628	 9623	 469.5
+mk2-stripped	 1195	 4003	 5298
+----------------------------------------------
+mk3 (1)		    -	 6552	 6552	1870.8
+mk3-stripped	    -	 3286	 3286
+----------------------------------------------
+mk4		 1337	 6956	 8293	 802.9
+mk4-stripped	  798	 3457	 4225
+----------------------------------------------
+
+(1) mk3 does not have a file input streaming function
+
+(2) Speed was benchmarked using a Sempron 3000+. Benchmark scripts are
+in the test directories. Best of first three figures quoted. This is a
+measurement of raw lexer speed, i.e. tokens are read but no processing
+is done. All files are read in entirely before running the lexer.
+
+The performance of the orig-5.0.3 parser is probably a whole magnitude
+less than the orig-5.0.3 lexer performance.
+
+Parsers
+-------
+
+lparser_mk3	Written for the simplified lexer interface of llex_mk3+.
+		(Should be compatible with llex_mk4 too, but untested.)
+		This is a lexer skeleton, stripped of codegen code. See
+		the comments in the source code for more information.
+		Without logging messages and comments, it's under 600 LOC.
+
+		Sample output of the parser message logger can be found
+		in the test/parser_log subdirectory.
+
+		Tested with test_parser-5.0.lua, the Lua 5.0.x parser test
+		cases in the test_lua/ directory, appears to be fine.
+
+		Status: SNIPPETS APPEAR TO WORK
+
+lparser_mk3b	As above, with variable management code added. In order
+		to use the parser usefully, variable management code is
+		a big step forward, allowing the parser to differentiate
+		locals, upvalues and globals. The number of added lines
+		is around 100 LOC. A binary chunk of lparser_mk3b
+		(stripped) is 18076 bytes.
+
+		Sample output of the parser message logger can be found
+		in the test/parser_log subdirectory.
+
+		Tested with test_parser-5.0.lua, the Lua 5.0.x parser test
+		cases in the test_lua/ directory, appears to be fine.
+
+		Status: SNIPPETS APPEAR TO WORK
+
+There will be no further development beyond lparser_mk3b. Further work
+will focus on a 5.1.x equivalent, for which both a parser skeleton and a
+parser with full code generation using nicely commented code is planned.
+
+Other notes:
+------------
+
+For Lua 5.0.2, see Yueliang 0.1.3, which was the last release of Lua
+5.0.2 material.
+
+Test scripts for the lexer should probably be consolidated, but it's a
+little difficult because not all lexers give the same error messages or
+use the same token names or format.
+

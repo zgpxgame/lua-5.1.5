@@ -1,0 +1,51 @@
+orig-5.0.3
+
+This is a straightforward port of the Lua 5.0.3 front end (lexical
+analyzer, parser, code generator, binary chunk dumper.)
+
+The front end files are:
+
+	lopcodes.lua	opcode definition
+	lzio.lua	input streams
+	llex.lua	lexical analyzer
+	lparser.lua	parser
+	lcode.lua	code generator
+	ldump.lua	binary chunk dumper
+
+Status: operational, passes all current tests (non-exhaustive)
+
+Major test scripts are:
+
+	test/test_llex.lua		exercises test cases
+	test/test_lparser2.lua		exercises test cases
+
+luac.lua is a clone of Lua 5.0.3's luac.lua, except that it generates a
+binary chunk using Yueliang's front end implementation.
+
+Note that performance is not a consideration. The code tries to stay
+faithful to its C roots, so that if you were to do anything using this
+codebase, backporting the changes to C will be easy. As such, this
+codebase is meant for learning or prototyping purposes.
+
+Many parameters are unused, because call arguments are retained as far
+as possible. Changes and deletions are described wherever possible, but
+documentation of changes is not comprehensive.
+
+These files will stay faithful to the equivalent C files or modules in
+Lua 5.0.3. For rewrites or new features, a new directory will be created
+and a different set of files maintained. For Lua 5.1, a new directory
+will be created.
+
+The test directory has several primitive test scripts. Much better
+testing is planned. Eventually, the codebase will be validated using
+automated tests, so that any changes that breaks the system can be
+caught easily.
+
+The tools directory has a call graph generator, showing what gets
+called. Specific modules and functions can be monitored, and some
+parameters and return values are shown. This is a demonstration of the
+flexibility and ease of manipulation of using a relatively inefficient
+global table scheme.
+
+For Lua 5.0.2, see Yueliang 0.1.3, which was the last release of Lua
+5.0.2 material.
