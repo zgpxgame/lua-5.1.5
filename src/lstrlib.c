@@ -198,7 +198,12 @@ static int capture_to_close (MatchState *ms) {
   return luaL_error(ms->L, "invalid pattern capture");
 }
 
-
+/*
+** 找到字符类的结束点
+** %w 结束点在w后
+** [^%w] 结束点在]后
+** 不是转义字符，结束点是本身
+*/
 static const char *classend (MatchState *ms, const char *p) {
   switch (*p++) {
     case L_ESC: {
@@ -264,7 +269,13 @@ static int matchbracketclass (int c, const char *p, const char *ec) {
   return !sig;
 }
 
-
+/*
+** 检测字符c是否匹配字符类p
+**     匹配任意字符
+**     匹配预定义字符类
+**     匹配字符集合类
+**     匹配字符本身
+*/
 static int singlematch (int c, const char *p, const char *ep) {
   switch (*p) {
     case '.': return 1;  /* matches any char */
@@ -297,7 +308,9 @@ static const char *matchbalance (MatchState *ms, const char *s,
   return NULL;  /* string ends out of balance */
 }
 
-
+/*
+** 尽可能多的匹配p，然后再回头匹配模式中剩余部分
+*/
 static const char *max_expand (MatchState *ms, const char *s,
                                  const char *p, const char *ep) {
   ptrdiff_t i = 0;  /* counts maximum expand for item */
@@ -312,7 +325,9 @@ static const char *max_expand (MatchState *ms, const char *s,
   return NULL;
 }
 
-
+/*
+** 尽可能多匹配p后面的模式，而最小匹配p
+*/
 static const char *min_expand (MatchState *ms, const char *s,
                                  const char *p, const char *ep) {
   for (;;) {
@@ -361,7 +376,9 @@ static const char *match_capture (MatchState *ms, const char *s, int l) {
   else return NULL;
 }
 
-
+/*
+** 返回匹配内容后的那个字符地址
+*/
 static const char *match (MatchState *ms, const char *s, const char *p) {
   init: /* using goto's to optimize tail recursion */
   switch (*p) {

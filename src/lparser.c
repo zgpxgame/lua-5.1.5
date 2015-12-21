@@ -831,12 +831,12 @@ static BinOpr subexpr (LexState *ls, expdesc *v, unsigned int limit) {
   UnOpr uop;
   enterlevel(ls);
   uop = getunopr(ls->t.token);
-  if (uop != OPR_NOUNOPR) {
+  if (uop != OPR_NOUNOPR) { /* 一元运算符 */
     luaX_next(ls);
     subexpr(ls, v, UNARY_PRIORITY);
     luaK_prefix(ls->fs, uop, v);
   }
-  else simpleexp(ls, v);
+  else simpleexp(ls, v); /* 简单表达式 */
   /* expand while operators have priorities higher than `limit' */
   op = getbinopr(ls->t.token);
   while (op != OPR_NOBINOPR && priority[op].left > limit) {
@@ -947,7 +947,7 @@ static void assignment (LexState *ls, struct LHS_assign *lh, int nvars) {
     int nexps;
     checknext(ls, '=');
     nexps = explist1(ls, &e);
-    if (nexps != nvars) {
+    if (nexps != nvars) { /* 表达式数量和变量数量不等时，调整：变量少，丢掉多余的表达式值，变量多，赋值nil */
       adjust_assign(ls, nvars, nexps, &e);
       if (nexps > nvars)
         ls->fs->freereg -= nexps - nvars;  /* remove extra values */

@@ -329,7 +329,40 @@ void luaK_setoneret (FuncState *fs, expdesc *e) {
   }
 }
 
-
+/*
+** http://lua-users.org/lists/lua-l/2015-12/msg00091.html
+** 
+** > My questions are:
+** > a) What does luaK_dischargevars() do?
+** 
+** Code generation for several kinds of expressions is delayed until Lua
+** knows what it will do with that expression. (For instance, an access
+** to an upvalue does not immediately create a OP_GETUPVAL instruction,
+** because table access can use OP_GETTABUP directly.)
+** 
+** So, there are a family of functions in 'lcode.c' to make sure that
+** expressions are restricted to some specific forms. In particular,
+** 'luaK_dischargevars' makes sure that the result of an expression is not
+** in a non-local variable (upvalue or table field).
+** 
+** 
+** > b) What does discharge2anyreg() do? It seems to also call luaK_dischargevars().
+** 
+** This one restricts even more the expression, getting rid of constants
+** and ensuring that the expression's value is in a register.
+** 
+** 
+** > c) I find that if I call freeexp() below it causes bad code generation
+** > - presumably because the register gets freed?
+** > [...]
+** >     case VNONRELOC: {
+** >       discharge2anyreg(fs, e);
+** >       \\* freeexp(fs, e); \\*
+** 
+** Yes. 'freeexp' means "free occasional register being used by 'e'".
+** 
+** -- Roberto
+*/
 void luaK_dischargevars (FuncState *fs, expdesc *e) {
   switch (e->k) {
     case VLOCAL: {
@@ -722,7 +755,7 @@ static void codecomp (FuncState *fs, OpCode op, int cond, expdesc *e1,
   e1->k = VJMP;
 }
 
-
+/* Ç°×º */
 void luaK_prefix (FuncState *fs, UnOpr op, expdesc *e) {
   expdesc e2;
   e2.t = e2.f = NO_JUMP; e2.k = VKNUM; e2.u.nval = 0;
@@ -743,7 +776,7 @@ void luaK_prefix (FuncState *fs, UnOpr op, expdesc *e) {
   }
 }
 
-
+/* ÖÐ×º */
 void luaK_infix (FuncState *fs, BinOpr op, expdesc *v) {
   switch (op) {
     case OPR_AND: {
@@ -770,7 +803,7 @@ void luaK_infix (FuncState *fs, BinOpr op, expdesc *v) {
   }
 }
 
-
+/* ºó×º */
 void luaK_posfix (FuncState *fs, BinOpr op, expdesc *e1, expdesc *e2) {
   switch (op) {
     case OPR_AND: {

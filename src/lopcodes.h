@@ -84,8 +84,8 @@ enum OpMode {iABC, iABx, iAsBx};  /* basic instruction format */
 /*# Gets integer A fields bits of Instruction i.*/
 #define GETARG_A(i)	(cast(int, ((i)>>POS_A) & MASK1(SIZE_A,0)))
 /*# Sets (in-place) A field bits of Instruction i to integer v.*/
-#define SETARG_A(i,u)	((i) = (((i)&MASK0(SIZE_A,POS_A)) | \
-		((cast(Instruction, u)<<POS_A)&MASK1(SIZE_A,POS_A))))
+#define SETARG_A(i,u)	((i) = (((i)&MASK0(SIZE_A,POS_A)) | \ /* 清除原来的位，*/
+		((cast(Instruction, u)<<POS_A)&MASK1(SIZE_A,POS_A)))) /* 设置新的位，然后位或 */
 
 #define GETARG_B(i)	(cast(int, ((i)>>POS_B) & MASK1(SIZE_B,0)))
 #define SETARG_B(i,b)	((i) = (((i)&MASK0(SIZE_B,POS_B)) | \
