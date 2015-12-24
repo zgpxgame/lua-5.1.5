@@ -157,14 +157,18 @@ static int registerlocalvar (LexState *ls, TString *varname) {
 #define new_localvarliteral(ls,v,n) \
   new_localvar(ls, luaX_newstring(ls, "" v, (sizeof(v)/sizeof(char))-1), n)
 
-
+/* 新增一个局部变量 */
 static void new_localvar (LexState *ls, TString *name, int n) {
   FuncState *fs = ls->fs;
   luaY_checklimit(fs, fs->nactvar+n+1, LUAI_MAXVARS, "local variables");
+  /*
+  ** registerlocalvar注册一个局部变量，将其保存到f->locvars，f->locvars保存的是函数内所有的局部变量信息
+  ** fs->actvar只保存当前激活的局部变量在f->locvars中的索引
+  */
   fs->actvar[fs->nactvar+n] = cast(unsigned short, registerlocalvar(ls, name));
 }
 
-
+/* 设置本次激活的局部变量的作用域起点 */
 static void adjustlocalvars (LexState *ls, int nvars) {
   FuncState *fs = ls->fs;
   fs->nactvar = cast_byte(fs->nactvar + nvars);
@@ -173,7 +177,7 @@ static void adjustlocalvars (LexState *ls, int nvars) {
   }
 }
 
-
+/* 局部变量离开作用域，设置作用域终点 */
 static void removevars (LexState *ls, int tolevel) {
   FuncState *fs = ls->fs;
   while (fs->nactvar > tolevel)
@@ -253,18 +257,22 @@ static void singlevar (LexState *ls, expdesc *var) {
     var->u.s.info = luaK_stringK(fs, varname);  /* info points to global name */
 }
 
-
+/* 根据变量数量和表达式数量对赋值做调整 */
 static void adjust_assign (LexState *ls, int nvars, int nexps, expdesc *e) {
   FuncState *fs = ls->fs;
   int extra = nvars - nexps;
   if (hasmultret(e->k)) {
+    printf("hasmultret %d\n", extra);
+    /* 当表达式列表以 ... 或 函数调用 为结尾时，在进行调整前将这些值都加入表达式列表？ */
     extra++;  /* includes call itself */
     if (extra < 0) extra = 0;
     luaK_setreturns(fs, e, extra);  /* last exp. provides the difference */
     if (extra > 1) luaK_reserveregs(fs, extra-1);
   }
   else {
+    printf("not hasmultret %d\n", extra);
     if (e->k != VVOID) luaK_exp2nextreg(fs, e);  /* close last expression */
+    /* 当变量数量比表达式数量多时，为多余的变量保留寄存器，并生成loadnil指令 */
     if (extra > 0) {
       int reg = fs->freereg;
       luaK_reserveregs(fs, extra);

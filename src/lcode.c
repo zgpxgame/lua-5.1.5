@@ -201,6 +201,7 @@ void luaK_concat (FuncState *fs, int *l1, int l2) {
 
 /*# Updates function state's maximum needed stack size (maxstacksize) given that
 n additional registers will be needed.  Raises syntax error if above limit (MAXSTACK).*/
+/* 更新函数状态中最大寄存器数量，n为需要额外增加的寄存器数量 */
 void luaK_checkstack (FuncState *fs, int n) {
   int newstack = fs->freereg + n;
   if (newstack > fs->f->maxstacksize) {
@@ -212,6 +213,7 @@ void luaK_checkstack (FuncState *fs, int n) {
 
 
 /*# Like luaK_checkstack but also reserves those n additional registers.*/
+/* 保留n个自由寄存器供将来使用 */
 void luaK_reserveregs (FuncState *fs, int n) {
   luaK_checkstack(fs, n);
   fs->freereg += n;
@@ -221,6 +223,7 @@ void luaK_reserveregs (FuncState *fs, int n) {
 /*# This complements luaK_reserveregs.  It frees the top-most reserved register.
 But it only does this if reg is actually a register (not an index in the constant table)
 and it's not used for storage of a local variable (the lowest nactvar values on the stack).*/
+/* 释放顶端的保留寄存器，使之变成自由寄存器 */
 static void freereg (FuncState *fs, int reg) {
   if (!ISK(reg) && reg >= fs->nactvar) {
     fs->freereg--;
@@ -228,7 +231,7 @@ static void freereg (FuncState *fs, int reg) {
   }
 }
 
-
+/* 释放表达式占用的寄存器 */
 static void freeexp (FuncState *fs, expdesc *e) {
   if (e->k == VNONRELOC)
     freereg(fs, e->u.s.info);
@@ -492,6 +495,7 @@ int luaK_exp2anyreg (FuncState *fs, expdesc *e) {
   }
   luaK_exp2nextreg(fs, e);  /* default */
   return e->u.s.info;
+
 }
 
 
@@ -530,7 +534,9 @@ int luaK_exp2RK (FuncState *fs, expdesc *e) {
   return luaK_exp2anyreg(fs, e);
 }
 
-
+/*
+** 将ex保存到变量var中
+*/
 void luaK_storevar (FuncState *fs, expdesc *var, expdesc *ex) {
   switch (var->k) {
     case VLOCAL: {
@@ -544,7 +550,12 @@ void luaK_storevar (FuncState *fs, expdesc *var, expdesc *ex) {
       break;
     }
     case VGLOBAL: {
-      int e = luaK_exp2anyreg(fs, ex);
+      /* 
+	  ** 将 ex 保存到全局变量 var
+	  **   1. 先将ex的值放入寄存器e
+	  **   2. 将e中的值保存到全局表中，表的键名索引在var->u.s.info中
+	  */
+	  int e = luaK_exp2anyreg(fs, ex);
       luaK_codeABx(fs, OP_SETGLOBAL, e, var->u.s.info);
       break;
     }

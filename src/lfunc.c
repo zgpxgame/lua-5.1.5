@@ -159,6 +159,7 @@ void luaF_freeclosure (lua_State *L, Closure *c) {
 /*
 ** Look for n-th local variable at line `line' in function `func'.
 ** Returns NULL if not found.
+** 查找当前指令作用域内，第n个活跃的局部变量名称
 */
 const char *luaF_getlocalname (const Proto *f, int local_number, int pc) {
   int i;
