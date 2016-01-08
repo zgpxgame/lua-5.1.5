@@ -262,7 +262,6 @@ static void adjust_assign (LexState *ls, int nvars, int nexps, expdesc *e) {
   FuncState *fs = ls->fs;
   int extra = nvars - nexps;
   if (hasmultret(e->k)) {
-    printf("hasmultret %d\n", extra);
     /* 当表达式列表以 ... 或 函数调用 为结尾时，在进行调整前将这些值都加入表达式列表？ */
     extra++;  /* includes call itself */
     if (extra < 0) extra = 0;
@@ -270,7 +269,6 @@ static void adjust_assign (LexState *ls, int nvars, int nexps, expdesc *e) {
     if (extra > 1) luaK_reserveregs(fs, extra-1);
   }
   else {
-    printf("not hasmultret %d\n", extra);
     if (e->k != VVOID) luaK_exp2nextreg(fs, e);  /* close last expression */
     /* 当变量数量比表达式数量多时，为多余的变量保留寄存器，并生成loadnil指令 */
     if (extra > 0) {
