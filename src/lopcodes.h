@@ -33,6 +33,11 @@ enum OpMode {iABC, iABx, iAsBx};  /* basic instruction format */
 
 /*
 ** size and position of opcode arguments.
+** 
+** 指令布局（32bits 高 -> 低）
+** B:9 C:9 A:8 I:6
+** sBx:18  A:8 I:6
+** Bx:18   A:8 I:6
 */
 #define SIZE_C		9
 #define SIZE_B		9

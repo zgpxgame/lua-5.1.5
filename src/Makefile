@@ -7,12 +7,12 @@
 # Your platform. See PLATS for possible values.
 PLAT= none
 
-CC= gcc
+CC= /usr/local/gccgraph/bin/gcc
 # CFLAGS= -O2 -Wall $(MYCFLAGS)
 CFLAGS= -g -Wall $(MYCFLAGS)
 AR= ar rcu
 RANLIB= ranlib
-RM= del
+RM= rm
 LIBS= -lm $(MYLIBS)
 
 MYCFLAGS=

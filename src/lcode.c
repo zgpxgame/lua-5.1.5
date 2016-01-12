@@ -245,6 +245,10 @@ value in the constant table to an integer index in the constant table.  The cons
 table allocated size may need to be grown (and new empty space filled
 with nil's) prior to inserting the constant.  (TODO-comment on luaC_barrier?)
 Returns 0-based index of the new constant in the constant table.*/
+/*
+** 添加一个常量值到fs的常量表中，fs->h用来检测重复常量，并保存常量值在常量表(f->k)中的索引
+** 返回常量在常量表中的索引，索引从0开始
+*/
 static int addk (FuncState *fs, TValue *k, TValue *v) {
   lua_State *L = fs->L;
   TValue *idx = luaH_set(L, fs->h, k);
