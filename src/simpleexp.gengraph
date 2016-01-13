@@ -1,0 +1,3 @@
+simpleexp
+gengraph -f simpleexp -d 60 --output-type=html --output-layout=LR --ignore-re="luaX_.*;luaO_.*;luaC_.*;luaM_.*;luaF_.*;luaH_.*;luaD_.*" --ignore="checkname;testnext;checknext;check_match;codestring;str_checkname;enterlevel;leavelevel;init_exp;errorlimit;addk;luaK_checkstack;freereg;freeexp" --show="body;expr"
+
