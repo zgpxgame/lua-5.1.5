@@ -1,0 +1,119 @@
+diff -rupN /usr/lib/CodeViz_Bak/CollectCppDepn.pm /usr/lib/CodeViz/CollectCppDepn.pm
+--- /usr/lib/CodeViz_Bak/CollectCppDepn.pm	2013-04-27 19:09:56.000000000 +0800
++++ /usr/lib/CodeViz/CollectCppDepn.pm	2016-02-15 10:12:38.500841100 +0800
+@@ -136,14 +136,14 @@ sub analyse_cdepn {
+       # has been included from an external file and 
+       # should be ignored, otherwise record it as a function
+       # declaration
+-      if (/^F {(.*)} {(.+):(.+)}/) {
++      if (/^F \{(.*)\} \{(.+):(.+)\}/) {
+         my $loc="$2:$3";
+ 	$f1 = parseDeclaration($1);
+         
+ 	#if ($cpp) { $f1 =~ s/<.*>//g; }
+         $F{$f1} = "$2:$3";
+         $M{$f1}=3;
+-      } elsif (/^C {(.*)} {(.+):(.+)}\s+(.+)/) {
++      } elsif (/^C \{(.*)\} \{(.+):(.+)\}\s+(.+)/) {
+         my $loc = "$2:$3";
+         # Lines beginning with C are calling a function
+         # The key is hashed as "caller:callee" and the
+diff -rupN /usr/lib/CodeViz_Bak/CollectCXref.pm /usr/lib/CodeViz/CollectCXref.pm
+--- /usr/lib/CodeViz_Bak/CollectCXref.pm	2013-04-27 19:09:56.000000000 +0800
++++ /usr/lib/CodeViz/CollectCXref.pm	2016-02-15 10:13:06.738888900 +0800
+@@ -204,28 +204,29 @@ sub readcdepn {
+   
+     while (!eof(CDEPFILE)) {
+       $line = <CDEPFILE>;
++	  $line =~ s/\r\n\z//;
+       # Read a function declaration line
+-      if ($line =~ /^F {(.*)} {(.+):(.+)}/) {
++      if ($line =~ /^F \{(.*)\} \{(.+):(.+)\}/) {
+         my $fdecl = $1;
+         $file = $f;
+         $file =~ s/\.cdepn//;
+-	# Strip out the source root if it's in the filename
+-	if ($file =~ /^$toplevel_escaped/) {
+-	  $file =~ s/^$toplevel_escaped//;
+-	}
+-	$file .= "\:$3";
+-	$caller = parseDeclaration($fdecl);
++		# Strip out the source root if it's in the filename
++		if ($file =~ /^$toplevel_escaped/) {
++		  $file =~ s/^$toplevel_escaped//;
++		}
++		$file .= "\:$3";
++		$caller = parseDeclaration($fdecl);
+ 
+         $cdepnfdecl{$caller} = "$file";
+       }
+ 
+       # Read a function call line
+-      if ($line =~ /^C {(.*)} {(.+):(.+)}\s+(.+)/) {
++      if ($line =~ /^C \{(.*)\} \{(.+):(.+)\}\s+(.+)/) {
+         $caller = parseDeclaration($1);
+-	$callee = parseDeclaration($4);
+-        $line   = $3;
+-	$file   = $2;
+-	$file =~ s/\:$//;
++		$callee = parseDeclaration($4);
++			$line   = $3;
++		$file   = $2;
++		$file =~ s/\:$//;
+ 
+         # Check if the filename is a header
+         if (isheader($2)) {
+@@ -234,28 +235,28 @@ sub readcdepn {
+           $headers{$file} = 1;
+         }
+ 
+-	# Strip out the source root if it's in the filename
+-	if ($file =~ /^$toplevel_escaped/) {
+-	  $file =~ s/^$toplevel_escaped//;
+-	}
++		# Strip out the source root if it's in the filename
++		if ($file =~ /^$toplevel_escaped/) {
++		  $file =~ s/^$toplevel_escaped//;
++		}
+ 
+         # Only record the function call if its in the same source file
+         if ($f eq $file || $baref eq $file || isheader($file)) {
+           $cdepncloc{"$f:$line"} = "$caller~$callee";
+-	  if (isheader($file)) {
+-            $cdepncall{"$caller~$callee"} = "$caller~$file:$line ";
+-	  } else {
+-            $cdepncall{"$caller~$callee"} .= "$caller~$f:$line ";
+-	  }
++			if (isheader($file)) {
++				$cdepncall{"$caller~$callee"} = "$caller~$file:$line ";
++			} else {
++				$cdepncall{"$caller~$callee"} .= "$caller~$f:$line ";
++			}
+         } else {
+ 
+-	  if ($caller eq "__alloc_pages" || $callee eq "__alloc_pages") { 
+-	    print "HERE: $caller -> $callee\n"; 
+-	    print "f: $f\n";
+-	    print "file: $file\n";
+-	    print "baref: $baref\n";
+-	  }
+-	}
++		  if ($caller eq "__alloc_pages" || $callee eq "__alloc_pages") { 
++			print "HERE: $caller -> $callee\n"; 
++			print "f: $f\n";
++			print "file: $file\n";
++			print "baref: $baref\n";
++		  }
++		}
+       }
+ 
+       $defs++;
+@@ -477,7 +478,7 @@ sub findident {
+       }
+     }
+   
+-    # Så juksar me litt.
++    # S?juksar me litt.
+     foreach (@reserved) {
+       delete($xref{$_});
+     }
