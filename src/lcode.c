@@ -555,11 +555,11 @@ void luaK_storevar (FuncState *fs, expdesc *var, expdesc *ex) {
     }
     case VGLOBAL: {
       /* 
-	  ** 将 ex 保存到全局变量 var
-	  **   1. 先将ex的值放入寄存器e
-	  **   2. 将e中的值保存到全局表中，表的键名索引在var->u.s.info中
-	  */
-	  int e = luaK_exp2anyreg(fs, ex);
+      ** 将 ex 保存到全局变量 var
+      **   1. 先将ex的值放入寄存器e
+      **   2. 将e中的值保存到全局表中，表的键名索引在var->u.s.info中
+      */
+      int e = luaK_exp2anyreg(fs, ex);
       luaK_codeABx(fs, OP_SETGLOBAL, e, var->u.s.info);
       break;
     }

@@ -488,9 +488,9 @@ static const int sentinel_ = 0;
 **     local res = loader(name) -- initialize module
 **     if res ~= nil then
 **       package.loaded[name] = res
-**    end
-**  end
-**  return package.loaded[name]
+**     end
+**   end
+**   return package.loaded[name]
 ** end
 */
 static int ll_require (lua_State *L) {
@@ -513,12 +513,12 @@ static int ll_require (lua_State *L) {
   for (i=1; ; i++) {
     lua_rawgeti(L, -2, i);  /* get a loader */
 
-	/* 当所有的loader都没法找到指定模块时，抛出错误信息 */
+    /* 当所有的loader都没法找到指定模块时，抛出错误信息 */
     if (lua_isnil(L, -1))
       luaL_error(L, "module " LUA_QS " not found:%s",
                     name, lua_tostring(L, -2));
 
-	/* 调用loader尝试加载模块 */
+    /* 调用loader尝试加载模块 */
     lua_pushstring(L, name);
     lua_call(L, 1, 1);  /* call it */
 
@@ -784,6 +784,7 @@ LUALIB_API int luaopen_package (lua_State *L) {
 
   /*
   ** 注册全局函数require, module，并且会继承lua_package的函数环境，即环境为package表
+  ** 为了提高效率而将package设置为require的环境表？
   */
   lua_pushvalue(L, LUA_GLOBALSINDEX);
   luaL_register(L, NULL, ll_funcs);  /* open lib into global table */
