@@ -113,7 +113,7 @@ static int str_byte (lua_State *L) {
   if ((size_t)pose > l) pose = l;
   if (posi > pose) return 0;  /* empty interval; return no values */
   n = (int)(pose -  posi + 1);
-  if (posi + n <= pose)  /* overflow? ÕûÊýÒç³ö */
+  if (posi + n <= pose)  /* overflow? æ•´æ•°æº¢å‡º */
     luaL_error(L, "string slice too long");
   luaL_checkstack(L, n, "string slice too long");
   for (i=0; i<n; i++)
@@ -199,10 +199,10 @@ static int capture_to_close (MatchState *ms) {
 }
 
 /*
-** ÕÒµ½×Ö·ûÀàµÄ½áÊøµã
-** %w ½áÊøµãÔÚwºó
-** [^%w] ½áÊøµãÔÚ]ºó
-** ²»ÊÇ×ªÒå×Ö·û£¬½áÊøµãÊÇ±¾Éí
+** æ‰¾åˆ°å­—ç¬¦ç±»çš„ç»“æŸç‚¹
+** %w ç»“æŸç‚¹åœ¨wåŽ
+** [^%w] ç»“æŸç‚¹åœ¨]åŽ
+** ä¸æ˜¯è½¬ä¹‰å­—ç¬¦ï¼Œç»“æŸç‚¹æ˜¯æœ¬èº«
 */
 static const char *classend (MatchState *ms, const char *p) {
   switch (*p++) {
@@ -270,11 +270,11 @@ static int matchbracketclass (int c, const char *p, const char *ec) {
 }
 
 /*
-** ¼ì²â×Ö·ûcÊÇ·ñÆ¥Åä×Ö·ûÀàp
-**     Æ¥ÅäÈÎÒâ×Ö·û
-**     Æ¥ÅäÔ¤¶¨Òå×Ö·ûÀà
-**     Æ¥Åä×Ö·û¼¯ºÏÀà
-**     Æ¥Åä×Ö·û±¾Éí
+** æ£€æµ‹å­—ç¬¦cæ˜¯å¦åŒ¹é…å­—ç¬¦ç±»p
+**     åŒ¹é…ä»»æ„å­—ç¬¦
+**     åŒ¹é…é¢„å®šä¹‰å­—ç¬¦ç±»
+**     åŒ¹é…å­—ç¬¦é›†åˆç±»
+**     åŒ¹é…å­—ç¬¦æœ¬èº«
 */
 static int singlematch (int c, const char *p, const char *ep) {
   switch (*p) {
@@ -309,7 +309,7 @@ static const char *matchbalance (MatchState *ms, const char *s,
 }
 
 /*
-** ¾¡¿ÉÄÜ¶àµÄÆ¥Åäp£¬È»ºóÔÙ»ØÍ·Æ¥ÅäÄ£Ê½ÖÐÊ£Óà²¿·Ö
+** å°½å¯èƒ½å¤šçš„åŒ¹é…pï¼Œç„¶åŽå†å›žå¤´åŒ¹é…æ¨¡å¼ä¸­å‰©ä½™éƒ¨åˆ†
 */
 static const char *max_expand (MatchState *ms, const char *s,
                                  const char *p, const char *ep) {
@@ -326,7 +326,7 @@ static const char *max_expand (MatchState *ms, const char *s,
 }
 
 /*
-** ¾¡¿ÉÄÜ¶àÆ¥ÅäpºóÃæµÄÄ£Ê½£¬¶ø×îÐ¡Æ¥Åäp
+** å°½å¯èƒ½å¤šåŒ¹é…påŽé¢çš„æ¨¡å¼ï¼Œè€Œæœ€å°åŒ¹é…p
 */
 static const char *min_expand (MatchState *ms, const char *s,
                                  const char *p, const char *ep) {
@@ -377,7 +377,7 @@ static const char *match_capture (MatchState *ms, const char *s, int l) {
 }
 
 /*
-** ·µ»ØÆ¥ÅäÄÚÈÝºóµÄÄÇ¸ö×Ö·ûµØÖ·
+** è¿”å›žåŒ¹é…å†…å®¹åŽçš„é‚£ä¸ªå­—ç¬¦åœ°å€
 */
 static const char *match (MatchState *ms, const char *s, const char *p) {
   init: /* using goto's to optimize tail recursion */
@@ -508,7 +508,7 @@ static int push_captures (MatchState *ms, const char *s, const char *e) {
   return nlevels;  /* number of strings pushed */
 }
 
-/* find: 1 ²éÕÒ£¬ 0 Æ¥Åä */
+/* find: 1 æŸ¥æ‰¾ï¼Œ 0 åŒ¹é… */
 static int str_find_aux (lua_State *L, int find) {
   size_t l1, l2;
   const char *s = luaL_checklstring(L, 1, &l1);

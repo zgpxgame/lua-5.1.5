@@ -25,11 +25,11 @@ void luaS_resize (lua_State *L, int newsize) {
   int i;
   if (G(L)->gcstate == GCSsweepstring)
     return;  /* cannot resize during GC traverse */
-  /* ·ÖÅäÐÂ¿Õ¼ä£¬²¢³õÊ¼»¯ËùÓÐhash½áµãÎªnull */
+  /* åˆ†é…æ–°ç©ºé—´ï¼Œå¹¶åˆå§‹åŒ–æ‰€æœ‰hashç»“ç‚¹ä¸ºnull */
   newhash = luaM_newvector(L, newsize, GCObject *);
   tb = &G(L)->strt;
   for (i=0; i<newsize; i++) newhash[i] = NULL;
-  /* °ÑÔ­À´ËùÓÐµÄÔªËØÖØÐÂ¹þÏ£Ò»±é£¬´æÈëÐÂµÄ×Ö·û´®±í */
+  /* æŠŠåŽŸæ¥æ‰€æœ‰çš„å…ƒç´ é‡æ–°å“ˆå¸Œä¸€éï¼Œå­˜å…¥æ–°çš„å­—ç¬¦ä¸²è¡¨ */
   /* rehash */
   for (i=0; i<tb->size; i++) {
     GCObject *p = tb->hash[i];
@@ -55,7 +55,7 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
   stringtable *tb;
   if (l+1 > (MAX_SIZET - sizeof(TString))/sizeof(char))
     luaM_toobig(L);
-  /* ¹¹ÔìÐÂµÄ×Ö·û´® */
+  /* æž„é€ æ–°çš„å­—ç¬¦ä¸² */
   ts = cast(TString *, luaM_malloc(L, (l+1)*sizeof(char)+sizeof(TString)));
   ts->tsv.len = l;
   ts->tsv.hash = h;
@@ -64,13 +64,13 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
   ts->tsv.reserved = 0;
   memcpy(ts+1, str, l*sizeof(char));
   ((char *)(ts+1))[l] = '\0';  /* ending 0 */
-  /* Á´½Óµ½hashÖµËùÔÚµÄ½áµã */
+  /* é“¾æŽ¥åˆ°hashå€¼æ‰€åœ¨çš„ç»“ç‚¹ */
   tb = &G(L)->strt;
   h = lmod(h, tb->size);
   ts->tsv.next = tb->hash[h];  /* chain new entry */
   tb->hash[h] = obj2gco(ts);
   tb->nuse++;
-  /* ¿Õ¼äÓÃÍêÁË£¬ÔÙÔö³¤2±¶ */
+  /* ç©ºé—´ç”¨å®Œäº†ï¼Œå†å¢žé•¿2å€ */
   if (tb->nuse > cast(lu_int32, tb->size) && tb->size <= MAX_INT/2)
     luaS_resize(L, tb->size*2);  /* too crowded */
   return ts;
@@ -82,10 +82,10 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
   unsigned int h = cast(unsigned int, l);  /* seed */
   size_t step = (l>>5)+1;  /* if string is too long, don't hash all its chars */
   size_t l1;
-  /* ¼ÆËãhashÖµ */
+  /* è®¡ç®—hashå€¼ */
   for (l1=l; l1>=step; l1-=step)  /* compute hash */
     h = h ^ ((h<<5)+(h>>2)+cast(unsigned char, str[l1-1]));
-  /* ²éÕÒ×Ö·û´®µÄhash±íÖÐÊÇ·ñÒÑ´æÔÚÍ¬ÑùµÄ×Ö·û´® */
+  /* æŸ¥æ‰¾å­—ç¬¦ä¸²çš„hashè¡¨ä¸­æ˜¯å¦å·²å­˜åœ¨åŒæ ·çš„å­—ç¬¦ä¸² */
   for (o = G(L)->strt.hash[lmod(h, G(L)->strt.size)];
        o != NULL;
        o = o->gch.next) {
@@ -96,7 +96,7 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
       return ts;
     }
   }
-  /* ÐÂ½¨Ò»¸ö×Ö·û´® */
+  /* æ–°å»ºä¸€ä¸ªå­—ç¬¦ä¸² */
   return newlstr(L, str, l, h);  /* not found */
 }
 

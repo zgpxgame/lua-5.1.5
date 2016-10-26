@@ -301,7 +301,7 @@ void luaV_concat (lua_State *L, int total, int last) {
       }
       buffer = luaZ_openspace(L, &G(L)->buff, tl);
       tl = 0;
-      /* Ω´n∏ˆ◊÷∑˚¥Æ¡¨Ω”∆¿¥ */
+      /* Â∞Ün‰∏™Â≠óÁ¨¶‰∏≤ËøûÊé•Ëµ∑Êù• */
       for (i=n; i>0; i--) {  /* concat all strings */
         size_t l = tsvalue(top-i)->len;
         memcpy(buffer+tl, svalue(top-i), l);
@@ -424,7 +424,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       ** Copies the value of register R(B) into register R(A). If R(B) holds a table,
       ** function or userdata, then the reference to that object is copied. MOVE is
       ** often used for moving values into place for the next operation.
-      ** The opcode for MOVE has a second purpose ®C it is also used in creating
+      ** The opcode for MOVE has a second purpose ‚Äì it is also used in creating
       ** closures, always appearing after the CLOSURE instruction; see CLOSURE
       ** for more information.
       */
@@ -450,7 +450,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       ** instruction is skipped (this is used when you have an assignment
       ** statement where the expression uses relational operators, e.g. M = K>5.)
       ** You can use any non-zero value for the boolean true in field B, but since
-      ** you cannot use booleans as numbers in Lua, it°Øs best to stick to 1 for true. 
+      ** you cannot use booleans as numbers in Lua, it‚Äôs best to stick to 1 for true. 
       */
       case OP_LOADBOOL: {
         setbvalue(ra, GETARG_B(i));
@@ -477,7 +477,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       ** Copies the value in upvalue number B into register R(A). Each function
       ** may have its own upvalue list. This upvalue list is internal to the virtual
       ** machine; the list of upvalue name strings in a prototype is not mandatory.
-      ** The opcode for GETUPVAL has a second purpose ®C it is also used in
+      ** The opcode for GETUPVAL has a second purpose ‚Äì it is also used in
       ** creating closures, always appearing after the CLOSURE instruction; see
       ** CLOSURE for more information.
       */
@@ -554,7 +554,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       ** information for the array part and the hash part of the table, respectively.
       ** Appropriate values for B and C are set in order to avoid rehashing when
       ** initially populating the table with array values or hash key-value pairs.
-      ** Operand B and C are both encoded as a °∞floating point byte°± (so named in
+      ** Operand B and C are both encoded as a ‚Äúfloating point byte‚Äù (so named in
       ** lobject.c) which is eeeeexxx in binary, where x is the mantissa and e
       ** is the exponent. The actual value is calculated as 1xxx*2^(eeeee-1) if
       ** eeeee is greater than 0 (a range of 8 to 15*2^30.) If eeeee is 0, the actual
@@ -591,7 +591,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
 
       /*
       ** ADD A B C R(A) := RK(B) + RK(C)
-      ** SUB A B C R(A) := RK(B) ®C RK(C)
+      ** SUB A B C R(A) := RK(B) ‚Äì RK(C)
       ** MUL A B C R(A) := RK(B) * RK(C)
       ** DIV A B C R(A) := RK(B) / RK(C)
       ** MOD A B C R(A) := RK(B) % RK(C)
@@ -687,7 +687,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       /*
       ** CONCAT A B C R(A) := R(B).. ... ..R(C)
       ** Performs concatenation of two or more strings. In a Lua source, this is
-      ** equivalent to one or more concatenation operators (°Æ..°Ø) between two or
+      ** equivalent to one or more concatenation operators (‚Äò..‚Äô) between two or
       ** more expressions. The source registers must be consecutive, and C must
       ** always be greater than B. The result is placed in R(A).
       */
@@ -719,8 +719,8 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       ** Compares RK(B) and RK(C), which may be registers or constants. If the
       ** boolean result is not A, then skip the next instruction. Conversely, if the
       ** boolean result equals A, continue with the next instruction.
-      ** EQ is for equality. LT is for °∞less than°± comparison. LE is for °∞less than or
-      ** equal to°± comparison. The boolean A field allows the full set of relational
+      ** EQ is for equality. LT is for ‚Äúless than‚Äù comparison. LE is for ‚Äúless than or
+      ** equal to‚Äù comparison. The boolean A field allows the full set of relational
       ** comparison operations to be synthesized from these three instructions.
       ** The Lua code generator produces either 0 or 1 for the boolean A.
       ** For the fall-through case, a JMP is always expected, in order to optimize
@@ -834,7 +834,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       ** Like CALL, register R(A) holds the reference to the function object to be
       ** called. B encodes the number of parameters in the same manner as a
       ** CALL instruction.
-      ** C isn°Øt used by TAILCALL, since all return results are significant. In any
+      ** C isn‚Äôt used by TAILCALL, since all return results are significant. In any
       ** case, Lua always generates a 0 for C, to denote multiple return results.
       */
       case OP_TAILCALL: {
@@ -918,7 +918,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       ** the initial value of the loop index so that the first iteration can start.
       ** In FORLOOP, a jump is made back to the start of the loop body if the limit
       ** has not been reached or exceeded. The sense of the comparison depends
-      ** on whether the stepping is negative or positive, hence the °∞<?=°± operator.
+      ** on whether the stepping is negative or positive, hence the ‚Äú<?=‚Äù operator.
       ** Jumps for both instructions are encoded as signed displacements in the
       ** sBx field. An empty loop has a FORLOOP sBx value of -1.
       ** FORLOOP also sets R(A+3), the external loop index that is local to the
@@ -1012,7 +1012,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       ** R(A). Field B is the number of elements to set. Field C encodes the block
       ** number of the table to be initialized. The values used to initialize the table
       ** are located in registers R(A+1), R(A+2), and so on.
-      ** The block size is denoted by FPF. FPF is °∞fields per flush°±, defined as
+      ** The block size is denoted by FPF. FPF is ‚Äúfields per flush‚Äù, defined as
       ** LFIELDS_PER_FLUSH in the source file lopcodes.h, with a value of 50.
       ** For example, for array locations 1 to 20, C will be 1 and B will be 20.
       ** If B is 0, the table is set with a variable number of array elements, from
@@ -1049,7 +1049,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       ** CLOSE A close all variables in the stack up to (>=) R(A)
       ** Closes all local variables in the stack from register R(A) onwards. This
       ** instruction is only generated if there is an upvalue present within those
-      ** local variables. It has no effect if a local isn°Øt used as an upvalue.
+      ** local variables. It has no effect if a local isn‚Äôt used as an upvalue.
       ** If a local is used as an upvalue, then the local variable need to be placed
       ** somewhere, otherwise it will go out of scope and disappear when a lexical
       ** block enclosing the local variable ends. CLOSE performs this operation for
@@ -1100,9 +1100,9 @@ void luaV_execute (lua_State *L, int nexeccalls) {
 
       /*
       ** VARARG A B R(A), R(A+1), ..., R(A+B-1) = vararg
-      ** VARARG implements the vararg operator °Æ...°Ø in expressions. VARARG
+      ** VARARG implements the vararg operator ‚Äò...‚Äô in expressions. VARARG
       ** copies B-1 parameters into a number of registers starting from R(A),
-      ** padding with nils if there aren°Øt enough values. If B is 0, VARARG copies
+      ** padding with nils if there aren‚Äôt enough values. If B is 0, VARARG copies
       ** as many values as it can based on the number of parameters passed. If a
       ** fixed number of values is required, B is a value greater than 1. If any
       ** number of values is required, B is 0.

@@ -157,18 +157,18 @@ static int registerlocalvar (LexState *ls, TString *varname) {
 #define new_localvarliteral(ls,v,n) \
   new_localvar(ls, luaX_newstring(ls, "" v, (sizeof(v)/sizeof(char))-1), n)
 
-/* ÐÂÔöÒ»¸ö¾Ö²¿±äÁ¿ */
+/* æ–°å¢žä¸€ä¸ªå±€éƒ¨å˜é‡ */
 static void new_localvar (LexState *ls, TString *name, int n) {
   FuncState *fs = ls->fs;
   luaY_checklimit(fs, fs->nactvar+n+1, LUAI_MAXVARS, "local variables");
   /*
-  ** registerlocalvar×¢²áÒ»¸ö¾Ö²¿±äÁ¿£¬½«Æä±£´æµ½f->locvars£¬f->locvars±£´æµÄÊÇº¯ÊýÄÚËùÓÐµÄ¾Ö²¿±äÁ¿ÐÅÏ¢
-  ** fs->actvarÖ»±£´æµ±Ç°¼¤»îµÄ¾Ö²¿±äÁ¿ÔÚf->locvarsÖÐµÄË÷Òý
+  ** registerlocalvaræ³¨å†Œä¸€ä¸ªå±€éƒ¨å˜é‡ï¼Œå°†å…¶ä¿å­˜åˆ°f->locvarsï¼Œf->locvarsä¿å­˜çš„æ˜¯å‡½æ•°å†…æ‰€æœ‰çš„å±€éƒ¨å˜é‡ä¿¡æ¯
+  ** fs->actvaråªä¿å­˜å½“å‰æ¿€æ´»çš„å±€éƒ¨å˜é‡åœ¨f->locvarsä¸­çš„ç´¢å¼•
   */
   fs->actvar[fs->nactvar+n] = cast(unsigned short, registerlocalvar(ls, name));
 }
 
-/* ÉèÖÃ±¾´Î¼¤»îµÄ¾Ö²¿±äÁ¿µÄ×÷ÓÃÓòÆðµã */
+/* è®¾ç½®æœ¬æ¬¡æ¿€æ´»çš„å±€éƒ¨å˜é‡çš„ä½œç”¨åŸŸèµ·ç‚¹ */
 static void adjustlocalvars (LexState *ls, int nvars) {
   FuncState *fs = ls->fs;
   fs->nactvar = cast_byte(fs->nactvar + nvars);
@@ -177,7 +177,7 @@ static void adjustlocalvars (LexState *ls, int nvars) {
   }
 }
 
-/* ¾Ö²¿±äÁ¿Àë¿ª×÷ÓÃÓò£¬ÉèÖÃ×÷ÓÃÓòÖÕµã */
+/* å±€éƒ¨å˜é‡ç¦»å¼€ä½œç”¨åŸŸï¼Œè®¾ç½®ä½œç”¨åŸŸç»ˆç‚¹ */
 static void removevars (LexState *ls, int tolevel) {
   FuncState *fs = ls->fs;
   while (fs->nactvar > tolevel)
@@ -257,12 +257,12 @@ static void singlevar (LexState *ls, expdesc *var) {
     var->u.s.info = luaK_stringK(fs, varname);  /* info points to global name */
 }
 
-/* ¸ù¾Ý±äÁ¿ÊýÁ¿ºÍ±í´ïÊ½ÊýÁ¿¶Ô¸³Öµ×öµ÷Õû */
+/* æ ¹æ®å˜é‡æ•°é‡å’Œè¡¨è¾¾å¼æ•°é‡å¯¹èµ‹å€¼åšè°ƒæ•´ */
 static void adjust_assign (LexState *ls, int nvars, int nexps, expdesc *e) {
   FuncState *fs = ls->fs;
   int extra = nvars - nexps;
   if (hasmultret(e->k)) {
-    /* µ±±í´ïÊ½ÁÐ±íÒÔ ... »ò º¯Êýµ÷ÓÃ Îª½áÎ²Ê±£¬ÔÚ½øÐÐµ÷ÕûÇ°½«ÕâÐ©Öµ¶¼¼ÓÈë±í´ïÊ½ÁÐ±í£¿ */
+    /* å½“è¡¨è¾¾å¼åˆ—è¡¨ä»¥ ... æˆ– å‡½æ•°è°ƒç”¨ ä¸ºç»“å°¾æ—¶ï¼Œåœ¨è¿›è¡Œè°ƒæ•´å‰å°†è¿™äº›å€¼éƒ½åŠ å…¥è¡¨è¾¾å¼åˆ—è¡¨ï¼Ÿ */
     extra++;  /* includes call itself */
     if (extra < 0) extra = 0;
     luaK_setreturns(fs, e, extra);  /* last exp. provides the difference */
@@ -270,7 +270,7 @@ static void adjust_assign (LexState *ls, int nvars, int nexps, expdesc *e) {
   }
   else {
     if (e->k != VVOID) luaK_exp2nextreg(fs, e);  /* close last expression */
-    /* µ±±äÁ¿ÊýÁ¿±È±í´ïÊ½ÊýÁ¿¶àÊ±£¬Îª¶àÓàµÄ±äÁ¿±£Áô¼Ä´æÆ÷£¬²¢Éú³ÉloadnilÖ¸Áî */
+    /* å½“å˜é‡æ•°é‡æ¯”è¡¨è¾¾å¼æ•°é‡å¤šæ—¶ï¼Œä¸ºå¤šä½™çš„å˜é‡ä¿ç•™å¯„å­˜å™¨ï¼Œå¹¶ç”ŸæˆloadnilæŒ‡ä»¤ */
     if (extra > 0) {
       int reg = fs->freereg;
       luaK_reserveregs(fs, extra);
@@ -837,12 +837,12 @@ static BinOpr subexpr (LexState *ls, expdesc *v, unsigned int limit) {
   UnOpr uop;
   enterlevel(ls);
   uop = getunopr(ls->t.token);
-  if (uop != OPR_NOUNOPR) { /* Ò»ÔªÔËËã·û */
+  if (uop != OPR_NOUNOPR) { /* ä¸€å…ƒè¿ç®—ç¬¦ */
     luaX_next(ls);
     subexpr(ls, v, UNARY_PRIORITY);
     luaK_prefix(ls->fs, uop, v);
   }
-  else simpleexp(ls, v); /* ¼òµ¥±í´ïÊ½ */
+  else simpleexp(ls, v); /* ç®€å•è¡¨è¾¾å¼ */
   /* expand while operators have priorities higher than `limit' */
   op = getbinopr(ls->t.token);
   while (op != OPR_NOBINOPR && priority[op].left > limit) {
@@ -953,7 +953,7 @@ static void assignment (LexState *ls, struct LHS_assign *lh, int nvars) {
     int nexps;
     checknext(ls, '=');
     nexps = explist1(ls, &e);
-    if (nexps != nvars) { /* ±í´ïÊ½ÊýÁ¿ºÍ±äÁ¿ÊýÁ¿²»µÈÊ±£¬µ÷Õû£º±äÁ¿ÉÙ£¬¶ªµô¶àÓàµÄ±í´ïÊ½Öµ£¬±äÁ¿¶à£¬¸³Öµnil */
+    if (nexps != nvars) { /* è¡¨è¾¾å¼æ•°é‡å’Œå˜é‡æ•°é‡ä¸ç­‰æ—¶ï¼Œè°ƒæ•´ï¼šå˜é‡å°‘ï¼Œä¸¢æŽ‰å¤šä½™çš„è¡¨è¾¾å¼å€¼ï¼Œå˜é‡å¤šï¼Œèµ‹å€¼nil */
       adjust_assign(ls, nvars, nexps, &e);
       if (nexps > nvars)
         ls->fs->freereg -= nexps - nvars;  /* remove extra values */

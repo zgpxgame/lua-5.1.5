@@ -39,7 +39,7 @@ typedef struct LG {
   
 
 /*
-** ³õÊ¼»¯lua×´Ì¬»úµÄÕ»£¬°üÀ¨º¯Êıµ÷ÓÃÕ»(ci)£¬¼Ä´æÆ÷Õ»(stack)
+** åˆå§‹åŒ–luaçŠ¶æ€æœºçš„æ ˆï¼ŒåŒ…æ‹¬å‡½æ•°è°ƒç”¨æ ˆ(ci)ï¼Œå¯„å­˜å™¨æ ˆ(stack)
 */
 static void stack_init (lua_State *L1, lua_State *L) {
   /* initialize CallInfo array */

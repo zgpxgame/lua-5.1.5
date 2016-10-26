@@ -159,7 +159,7 @@ void luaF_freeclosure (lua_State *L, Closure *c) {
 /*
 ** Look for n-th local variable at line `line' in function `func'.
 ** Returns NULL if not found.
-** ²éÕÒµ±Ç°Ö¸Áî×÷ÓÃÓòÄÚ£¬µÚn¸ö»îÔ¾µÄ¾Ö²¿±äÁ¿Ãû³Æ
+** æŸ¥æ‰¾å½“å‰æŒ‡ä»¤ä½œç”¨åŸŸå†…ï¼Œç¬¬nä¸ªæ´»è·ƒçš„å±€éƒ¨å˜é‡åç§°
 */
 const char *luaF_getlocalname (const Proto *f, int local_number, int pc) {
   int i;

@@ -34,7 +34,7 @@ enum OpMode {iABC, iABx, iAsBx};  /* basic instruction format */
 /*
 ** size and position of opcode arguments.
 ** 
-** Ö¸Áî²¼¾Ö£¨32bits ¸ß -> µÍ£©
+** æŒ‡ä»¤å¸ƒå±€ï¼ˆ32bits é«˜ -> ä½ï¼‰
 ** B:9 C:9 A:8 I:6
 ** sBx:18  A:8 I:6
 ** Bx:18   A:8 I:6
@@ -89,7 +89,7 @@ enum OpMode {iABC, iABx, iAsBx};  /* basic instruction format */
 /*# Gets integer A fields bits of Instruction i.*/
 #define GETARG_A(i)	(cast(int, ((i)>>POS_A) & MASK1(SIZE_A,0)))
 /*# Sets (in-place) A field bits of Instruction i to integer v.
-** Çå³ıÔ­À´µÄÎ»£¬ÉèÖÃĞÂµÄÎ»£¬È»ºóÎ»»ò
+** æ¸…é™¤åŸæ¥çš„ä½ï¼Œè®¾ç½®æ–°çš„ä½ï¼Œç„¶åä½æˆ–
 */
 #define SETARG_A(i,u)	((i) = (((i)&MASK0(SIZE_A,POS_A)) | \
 		((cast(Instruction, u)<<POS_A)&MASK1(SIZE_A,POS_A))))

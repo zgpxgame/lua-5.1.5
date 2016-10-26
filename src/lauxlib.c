@@ -41,8 +41,8 @@
 
 
 /*
-** 生成一个消息，表示某参数有错误
-** 应用场景：参数不合法（类型，或值范围错误）
+** 鐢熸垚涓�涓秷鎭紝琛ㄧず鏌愬弬鏁版湁閿欒
+** 搴旂敤鍦烘櫙锛氬弬鏁颁笉鍚堟硶锛堢被鍨嬶紝鎴栧�艰寖鍥撮敊璇級
 **
 ** Raises an error with the following message, where func is retrieved from the
 ** call stack:
@@ -73,7 +73,7 @@ LUALIB_API int luaL_argerror (lua_State *L, int narg, const char *extramsg) {
 
 
 /*
-** 应用场景：参数类型错误时
+** 搴旂敤鍦烘櫙锛氬弬鏁扮被鍨嬮敊璇椂
 **
 ** Generates an error with a message like the following:
 **

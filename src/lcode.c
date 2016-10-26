@@ -201,7 +201,7 @@ void luaK_concat (FuncState *fs, int *l1, int l2) {
 
 /*# Updates function state's maximum needed stack size (maxstacksize) given that
 n additional registers will be needed.  Raises syntax error if above limit (MAXSTACK).*/
-/* ∏¸–¬∫Ø ˝◊¥Ã¨÷–◊Ó¥Ûºƒ¥Ê∆˜ ˝¡ø£¨nŒ™–Ë“™∂ÓÕ‚‘ˆº”µƒºƒ¥Ê∆˜ ˝¡ø */
+/* Êõ¥Êñ∞ÂáΩÊï∞Áä∂ÊÄÅ‰∏≠ÊúÄÂ§ßÂØÑÂ≠òÂô®Êï∞ÈáèÔºån‰∏∫ÈúÄË¶ÅÈ¢ùÂ§ñÂ¢ûÂä†ÁöÑÂØÑÂ≠òÂô®Êï∞Èáè */
 void luaK_checkstack (FuncState *fs, int n) {
   int newstack = fs->freereg + n;
   if (newstack > fs->f->maxstacksize) {
@@ -213,7 +213,7 @@ void luaK_checkstack (FuncState *fs, int n) {
 
 
 /*# Like luaK_checkstack but also reserves those n additional registers.*/
-/* ±£¡Ùn∏ˆ◊‘”…ºƒ¥Ê∆˜π©Ω´¿¥ π”√ */
+/* ‰øùÁïôn‰∏™Ëá™Áî±ÂØÑÂ≠òÂô®‰æõÂ∞ÜÊù•‰ΩøÁî® */
 void luaK_reserveregs (FuncState *fs, int n) {
   luaK_checkstack(fs, n);
   fs->freereg += n;
@@ -223,7 +223,7 @@ void luaK_reserveregs (FuncState *fs, int n) {
 /*# This complements luaK_reserveregs.  It frees the top-most reserved register.
 But it only does this if reg is actually a register (not an index in the constant table)
 and it's not used for storage of a local variable (the lowest nactvar values on the stack).*/
-/*  Õ∑≈∂•∂Àµƒ±£¡Ùºƒ¥Ê∆˜£¨ π÷Æ±‰≥…◊‘”…ºƒ¥Ê∆˜ */
+/* ÈáäÊîæÈ°∂Á´ØÁöÑ‰øùÁïôÂØÑÂ≠òÂô®Ôºå‰Ωø‰πãÂèòÊàêËá™Áî±ÂØÑÂ≠òÂô® */
 static void freereg (FuncState *fs, int reg) {
   if (!ISK(reg) && reg >= fs->nactvar) {
     fs->freereg--;
@@ -231,7 +231,7 @@ static void freereg (FuncState *fs, int reg) {
   }
 }
 
-/*  Õ∑≈±Ì¥Ô Ω’º”√µƒºƒ¥Ê∆˜ */
+/* ÈáäÊîæË°®ËææÂºèÂç†Áî®ÁöÑÂØÑÂ≠òÂô® */
 static void freeexp (FuncState *fs, expdesc *e) {
   if (e->k == VNONRELOC)
     freereg(fs, e->u.s.info);
@@ -246,8 +246,8 @@ table allocated size may need to be grown (and new empty space filled
 with nil's) prior to inserting the constant.  (TODO-comment on luaC_barrier?)
 Returns 0-based index of the new constant in the constant table.*/
 /*
-** ÃÌº”“ª∏ˆ≥£¡ø÷µµΩfsµƒ≥£¡ø±Ì÷–£¨fs->h”√¿¥ºÏ≤‚÷ÿ∏¥≥£¡ø£¨≤¢±£¥Ê≥£¡ø÷µ‘⁄≥£¡ø±Ì(f->k)÷–µƒÀ˜“˝
-** ∑µªÿ≥£¡ø‘⁄≥£¡ø±Ì÷–µƒÀ˜“˝£¨À˜“˝¥”0ø™ º
+** Ê∑ªÂä†‰∏Ä‰∏™Â∏∏ÈáèÂÄºÂà∞fsÁöÑÂ∏∏ÈáèË°®‰∏≠Ôºåfs->hÁî®Êù•Ê£ÄÊµãÈáçÂ§çÂ∏∏ÈáèÔºåÂπ∂‰øùÂ≠òÂ∏∏ÈáèÂÄºÂú®Â∏∏ÈáèË°®(f->k)‰∏≠ÁöÑÁ¥¢Âºï
+** ËøîÂõûÂ∏∏ÈáèÂú®Â∏∏ÈáèË°®‰∏≠ÁöÑÁ¥¢ÂºïÔºåÁ¥¢Âºï‰ªé0ÂºÄÂßã
 */
 static int addk (FuncState *fs, TValue *k, TValue *v) {
   lua_State *L = fs->L;
@@ -539,7 +539,7 @@ int luaK_exp2RK (FuncState *fs, expdesc *e) {
 }
 
 /*
-** Ω´ex±£¥ÊµΩ±‰¡øvar÷–
+** Â∞Üex‰øùÂ≠òÂà∞ÂèòÈáèvar‰∏≠
 */
 void luaK_storevar (FuncState *fs, expdesc *var, expdesc *ex) {
   switch (var->k) {
@@ -555,9 +555,9 @@ void luaK_storevar (FuncState *fs, expdesc *var, expdesc *ex) {
     }
     case VGLOBAL: {
       /* 
-      ** Ω´ ex ±£¥ÊµΩ»´æ÷±‰¡ø var
-      **   1. œ»Ω´exµƒ÷µ∑≈»Îºƒ¥Ê∆˜e
-      **   2. Ω´e÷–µƒ÷µ±£¥ÊµΩ»´æ÷±Ì÷–£¨±Ìµƒº¸√˚À˜“˝‘⁄var->u.s.info÷–
+      ** Â∞Ü ex ‰øùÂ≠òÂà∞ÂÖ®Â±ÄÂèòÈáè var
+      **   1. ÂÖàÂ∞ÜexÁöÑÂÄºÊîæÂÖ•ÂØÑÂ≠òÂô®e
+      **   2. Â∞Üe‰∏≠ÁöÑÂÄº‰øùÂ≠òÂà∞ÂÖ®Â±ÄË°®‰∏≠ÔºåË°®ÁöÑÈîÆÂêçÁ¥¢ÂºïÂú®var->u.s.info‰∏≠
       */
       int e = luaK_exp2anyreg(fs, ex);
       luaK_codeABx(fs, OP_SETGLOBAL, e, var->u.s.info);
@@ -770,7 +770,7 @@ static void codecomp (FuncState *fs, OpCode op, int cond, expdesc *e1,
   e1->k = VJMP;
 }
 
-/* «∞◊∫ */
+/* ÂâçÁºÄ */
 void luaK_prefix (FuncState *fs, UnOpr op, expdesc *e) {
   expdesc e2;
   e2.t = e2.f = NO_JUMP; e2.k = VKNUM; e2.u.nval = 0;
@@ -791,7 +791,7 @@ void luaK_prefix (FuncState *fs, UnOpr op, expdesc *e) {
   }
 }
 
-/* ÷–◊∫ */
+/* ‰∏≠ÁºÄ */
 void luaK_infix (FuncState *fs, BinOpr op, expdesc *v) {
   switch (op) {
     case OPR_AND: {
@@ -818,7 +818,7 @@ void luaK_infix (FuncState *fs, BinOpr op, expdesc *v) {
   }
 }
 
-/* ∫Û◊∫ */
+/* ÂêéÁºÄ */
 void luaK_posfix (FuncState *fs, BinOpr op, expdesc *e1, expdesc *e2) {
   switch (op) {
     case OPR_AND: {
